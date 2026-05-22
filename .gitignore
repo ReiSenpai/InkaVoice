@@ -1,1 +1,16 @@
+# Entornos virtuales
+env/
+venv/
+
+# Variables de entorno (¡Crítico para que no se suban tus llaves de Hugging Face!)
+.env
 *.env
+
+# Caché de Python y pruebas
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

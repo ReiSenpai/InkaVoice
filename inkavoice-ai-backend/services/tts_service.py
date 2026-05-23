@@ -1,14 +1,11 @@
-import httpx
-from core.config import settings
+from core.config import hf_client, MODELS
 
-async def synthesize_speech(text: str, output_language: str) -> bytes:
-    headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
-    api_url = settings.TTS_MMS_QUE_URL if output_language == "qu" else settings.TTS_MELO_ES_URL
-    payload = {"inputs": text}
+def synthesize_speech(text: str, language: str) -> bytes:
+    """Convierte el texto generado a un archivo de audio (flac/wav)."""
+    model_id = MODELS["tts_quechua"] if language == "qu" else MODELS["tts_spanish"]
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(api_url, headers=headers, json=payload, timeout=40.0)
-        if response.status_code == 503:
-            raise Exception("Modelo TTS cargando. Reintenta en 20s.")
-        response.raise_for_status()
-        return response.content
+    audio_bytes = hf_client.text_to_speech(
+        text,
+        model=model_id
+    )
+    return audio_bytes

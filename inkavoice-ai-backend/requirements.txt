@@ -1,8 +1,5 @@
 fastapi
 uvicorn
+huggingface_hub
 python-multipart
-httpx
-PyJWT
-python-dotenv
-pytest
-pytest-asyncio
+pydantic

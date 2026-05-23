@@ -1,16 +1,17 @@
-import jwt
-from fastapi import HTTPException, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from core.config import settings
+import os
+from fastapi import Security, HTTPException, status
+from fastapi.security import APIKeyHeader
+from dotenv import load_dotenv
 
-security = HTTPBearer()
+load_dotenv()
 
-def verify_jwt(credentials: HTTPAuthorizationCredentials = Security(security)):
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        return payload.get("sub")
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado.")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido.")
+API_KEY = os.getenv("INKAVOICE_API_KEY", "llave-por-defecto-si-falla")
+api_key_header = APIKeyHeader(name="X-API-Key")
+
+def verify_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acceso denegado. API Key inválida."
+        )
+    return api_key_header

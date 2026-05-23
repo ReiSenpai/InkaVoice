@@ -1,13 +1,11 @@
-import httpx
-from core.config import settings
+from core.config import hf_client, MODELS
 
-async def recognize_speech(audio_bytes: bytes, input_language: str) -> str:
-    headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
-    api_url = settings.ASR_MMS_QUE_URL if input_language == "qu" else settings.ASR_WHISPER_URL
+def transcribe_audio(audio_bytes: bytes, language: str) -> str:
+    """Convierte el audio del usuario a texto dependiendo del idioma."""
+    model_id = MODELS["asr_quechua"] if language == "qu" else MODELS["asr_general"]
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(api_url, headers=headers, content=audio_bytes, timeout=40.0)
-        if response.status_code == 503:
-            raise Exception("Modelo ASR cargando. Reintenta en 20s.")
-        response.raise_for_status()
-        return response.json().get("text", "")
+    response = hf_client.automatic_speech_recognition(
+        audio=audio_bytes,
+        model=model_id
+    )
+    return response.text

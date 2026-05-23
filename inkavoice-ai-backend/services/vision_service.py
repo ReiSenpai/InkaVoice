@@ -1,17 +1,16 @@
-import httpx
+from core.config import hf_client, MODELS
 import base64
-from core.config import settings
 
-async def analyze_image(image_bytes: bytes, output_language: str) -> str:
-    headers = {"Authorization": f"Bearer {settings.HF_API_KEY}"}
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    prompt = f"USER: <image>\nIdentify this archaeological structure in Peru. Describe it historically in {output_language}.\nASSISTANT:"
-    payload = {"inputs": prompt, "image": image_b64}
+def analyze_archaeological_image(image_bytes: bytes) -> str:
+    """Recibe una imagen y devuelve la historia del sitio u objeto."""
+    prompt = "Describe detalladamente qué sitio u objeto arqueológico peruano aparece en esta imagen. Actúa como un guía de turismo contando su historia."
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(settings.VISION_API_URL, headers=headers, json=payload, timeout=50.0)
-        if response.status_code == 503:
-            raise Exception("Modelo de Visión cargando. Reintenta en 20s.")
-        response.raise_for_status()
-        full_text = response.json()[0].get("generated_text", "")
-        return full_text.split("ASSISTANT:")[1].strip() if "ASSISTANT:" in full_text else full_text
+    # Hugging Face a veces requiere la imagen en Base64 dentro del prompt para modelos VLM
+    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+    
+    response = hf_client.text_generation(
+        f"User: <image data:image/jpeg;base64,{encoded_image}>\n{prompt}\nAssistant:",
+        model=MODELS["vision_model"],
+        max_new_tokens=300
+    )
+    return response

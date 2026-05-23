@@ -1,24 +1,20 @@
-from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException
-from fastapi.responses import Response
-from core.security import verify_jwt
-from services.vision_service import analyze_image
-from services.tts_service import synthesize_speech
+from fastapi import APIRouter, UploadFile, File, Depends
+from core.security import verify_api_key
+from services.vision_service import analyze_archaeological_image
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_api_key)])
 
-@router.post("/vision")
-async def process_vision(
-    image_file: UploadFile = File(...),
-    output_language: str = Form("es"),
-    # user_id: str = Depends(verify_jwt) # Descomentar para producción
-):
-    try:
-        image_bytes = await image_file.read()
-        description_text = await analyze_image(image_bytes, output_language)
-        audio_response_bytes = await synthesize_speech(description_text, output_language)
-        
-        headers = {"X-Response-Text": description_text.encode('latin1', 'ignore').decode('latin1')}
-        return Response(content=audio_response_bytes, media_type="audio/flac", headers=headers)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/analyze/")
+async def analyze_image(image: UploadFile = File(...)):
+    image_bytes = await image.read()
+    
+    # 1. Analizar imagen y obtener historia
+    description = analyze_archaeological_image(image_bytes)
+    
+    return {
+        "status": "success",
+        "data": {
+            "description": description,
+            "type": "visual_guide"
+        }
+    }

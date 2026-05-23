@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InkaVoice - Tester de IA</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 2rem; }
+        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        button { background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.3s; }
+        button:hover { background-color: #2980b9; }
+        button.recording { background-color: #e74c3c; animation: pulse 1.5s infinite; }
+        .result-box { margin-top: 15px; padding: 10px; background: #ecf0f1; border-radius: 5px; min-height: 50px; word-wrap: break-word; }
+        input[type="file"] { margin-top: 10px; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- Módulo de Voz -->
+    <div class="container">
+        <h2>🎤 Asistente de Voz (ASR + LLM + TTS)</h2>
+        <p>Presiona el botón, haz tu pregunta turística y vuelve a presionar para enviar.</p>
+        <button id="btnRecord">Iniciar Grabación</button>
+        <div id="voiceStatus" style="margin-top: 10px; font-weight: bold; color: #7f8c8d;">Esperando...</div>
+        
+        <h3>Respuesta (Audio):</h3>
+        <audio id="audioPlayer" controls style="width: 100%; display: none;"></audio>
+    </div>
+
+    <!-- Módulo Visual -->
+    <div class="container">
+        <h2>📷 Guía Visual (Visión + LLM)</h2>
+        <p>Sube una foto de una estructura arqueológica para recibir la descripción.</p>
+        <input type="file" id="imageInput" accept="image/*">
+        <button id="btnUploadImg">Analizar Imagen</button>
+        
+        <h3>Descripción Histórica:</h3>
+        <div id="visionResult" class="result-box">La información de la IA aparecerá aquí...</div>
+    </div>
+
+    <script>
+        const API_KEY = "llave-secreta-inkavoice-2026";
+        const BASE_URL = "http://localhost:8000/api/v1";
+
+        // --- LÓGICA DE VOZ ---
+        let mediaRecorder;
+        let audioChunks = [];
+        const btnRecord = document.getElementById("btnRecord");
+        const voiceStatus = document.getElementById("voiceStatus");
+        const audioPlayer = document.getElementById("audioPlayer");
+
+        btnRecord.addEventListener("click", async () => {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                // Detener grabación y enviar
+                mediaRecorder.stop();
+                btnRecord.textContent = "Iniciar Grabación";
+                btnRecord.classList.remove("recording");
+                voiceStatus.textContent = "Procesando con la IA... espera un momento.";
+            } else {
+                // Iniciar grabación
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        formData.append("audio", audioBlob, "pregunta.wav");
+                        formData.append("language", "es"); // Prueba en español
+
+                        try {
+                            const response = await fetch(`${BASE_URL}/voice/process/`, {
+                                method: 'POST',
+                                headers: { 'X-API-Key': API_KEY },
+                                body: formData
+                            });
+
+                            if (!response.ok) throw new Error("Error en el servidor de IA");
+                            
+                            // Recibir el audio generado y reproducirlo
+                            const resultAudioBlob = await response.blob();
+                            const audioUrl = URL.createObjectURL(resultAudioBlob);
+                            audioPlayer.src = audioUrl;
+                            audioPlayer.style.display = "block";
+                            audioPlayer.play();
+                            voiceStatus.textContent = "¡Respuesta recibida!";
+                        } catch (error) {
+                            voiceStatus.textContent = "Error: " + error.message;
+                        }
+                    };
+
+                    mediaRecorder.start();
+                    btnRecord.textContent = "Detener y Enviar";
+                    btnRecord.classList.add("recording");
+                    voiceStatus.textContent = "Grabando... habla ahora.";
+                    audioPlayer.style.display = "none";
+                } catch (err) {
+                    alert("Permite el acceso al micrófono para probar InkaVoice.");
+                }
+            }
+        });
+
+        // --- LÓGICA VISUAL ---
+        const btnUploadImg = document.getElementById("btnUploadImg");
+        const imageInput = document.getElementById("imageInput");
+        const visionResult = document.getElementById("visionResult");
+
+        btnUploadImg.addEventListener("click", async () => {
+            const file = imageInput.files[0];
+            if (!file) return alert("Por favor selecciona una imagen primero.");
+
+            visionResult.textContent = "Analizando la estructura... (esto puede tardar unos segundos)";
+            const formData = new FormData();
+            formData.append("image", file);
+
+            try {
+                const response = await fetch(`${BASE_URL}/vision/analyze/`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': API_KEY },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    visionResult.textContent = data.data.description;
+                } else {
+                    visionResult.textContent = "Error de la IA: " + (data.detail || "Desconocido");
+                }
+            } catch (error) {
+                visionResult.textContent = "Fallo de conexión. Asegúrate de que Python esté corriendo. Error: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

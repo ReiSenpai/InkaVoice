@@ -1,0 +1,23 @@
+# InkaVoice (Expo / React Native)
+
+App móvil de InkaVoice con pantalla de login.
+
+## Requisitos
+
+- Node.js 18+
+- App **Expo Go** en tu teléfono (SDK 56)
+
+## Instalación y ejecución
+
+```bash
+npm install
+npx expo start
+```
+
+Escanea el código QR con Expo Go (Android) o la cámara (iOS).
+
+## Estructura
+
+- `App.tsx` — entrada de la app
+- `screens/LoginScreen.tsx` — pantalla de inicio de sesión
+- `components/BrandHeader.tsx` — logo + InkaVoice + eslogan

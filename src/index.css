@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-inka-green: #053528;
+  --color-inka-green-dark: #002b1b;
+  --color-inka-gold: #9a8447;
+  --color-inka-teal: #005a5a;
+  --color-inka-muted: #6b7280;
+  --color-inka-border: #e5e7eb;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --mobile-max-width: 430px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+}
+
+.mobile-shell {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #111827;
+}
+
+.mobile-frame {
+  width: 100%;
+  max-width: var(--mobile-max-width);
+  height: 100%;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  background: #f4f5f7;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 431px) {
+  .mobile-frame {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.safe-bottom {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-top {
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
+.touch-target {
+  min-height: 44px;
+}

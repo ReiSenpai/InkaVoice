@@ -10,26 +10,24 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BrandHeader from '../components/BrandHeader';
 import { colors } from '../theme/colors';
+import type { RootStackParamList } from '../navigation/types';
 
-type LoginScreenProps = {
-  onRegister?: () => void;
-  onForgotPassword?: () => void;
-  onSubmit?: (email: string, password: string) => void;
-};
-
-export default function LoginScreen({
-  onRegister,
-  onForgotPassword,
-  onSubmit,
-}: LoginScreenProps) {
+export default function LoginScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const goToMain = () => navigation.replace('Main');
+
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -59,7 +57,7 @@ export default function LoginScreen({
 
             <View style={styles.passwordRow}>
               <Text style={styles.label}>CONTRASEÑA</Text>
-              <Pressable onPress={onForgotPassword} hitSlop={8}>
+              <Pressable onPress={() => {}} hitSlop={8}>
                 <Text style={styles.forgotLink}>¿Olvidaste la clave?</Text>
               </Pressable>
             </View>
@@ -84,7 +82,7 @@ export default function LoginScreen({
 
             <Pressable
               style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-              onPress={() => onSubmit?.(email, password)}
+              onPress={goToMain}
             >
               <Text style={styles.primaryBtnText}>INICIAR SESIÓN</Text>
               <Text style={styles.primaryBtnArrow}>→</Text>
@@ -103,6 +101,7 @@ export default function LoginScreen({
 
             <Pressable
               style={({ pressed }) => [styles.guestBtn, pressed && styles.pressed]}
+              onPress={goToMain}
             >
               <Text style={styles.guestIcon}>👤</Text>
               <Text style={styles.guestBtnText}>Continuar como invitado</Text>
@@ -111,7 +110,7 @@ export default function LoginScreen({
 
           <Text style={styles.registerText}>
             ¿No tienes una cuenta?{' '}
-            <Text style={styles.registerLink} onPress={onRegister}>
+            <Text style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
               Regístrate aquí
             </Text>
           </Text>
@@ -123,7 +122,7 @@ export default function LoginScreen({
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Container>
   );
 }
 

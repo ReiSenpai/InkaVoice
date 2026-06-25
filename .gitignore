@@ -4,6 +4,17 @@
 node_modules/
 
 # =========================
+# PYTHON
+# =========================
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =========================
 # EXPO / REACT NATIVE
 # =========================
 .expo/
@@ -28,6 +39,9 @@ android/app/debug.keystore
 android/build/
 android/.cxx/
 
+# Keystores
+*.jks
+
 # =========================
 # IOS
 # =========================
@@ -39,26 +53,12 @@ ios/build/
 # =========================
 .env
 *.env
+*.local
 
 # =========================
 # LOGS
 # =========================
-npm-debug.log*
-yarn-debug.log*
-
-# =========================
-# OS
-# =========================
-.DS_Store
-Thumbs.db
-
-# =========================
-# IDE
-# =========================
-.vscode/
-.idea/
-# Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -66,24 +66,31 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.expo/
-dist/
-web-build/
-npm-debug.*
-*.jks
+# =========================
+# CERTIFICADOS Y CLAVES
+# =========================
 *.p8
 *.p12
 *.key
 *.mobileprovision
-*.orig.*
-*.local
 
-# Editor directories and files
+# =========================
+# IDE
+# =========================
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
+
+# =========================
+# SISTEMA OPERATIVO
+# =========================
 .DS_Store
+Thumbs.db
+
+# =========================
+# ARCHIVOS TEMPORALES
+# =========================
+*.orig.*
 *.suo
 *.ntvs*
 *.njsproj

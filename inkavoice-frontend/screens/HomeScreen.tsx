@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { useNavigation } from '@react-navigation/native';
 
 const TAB_BAR_HEIGHT = 72;
 
@@ -59,6 +60,7 @@ const AI_PICKS = [
 ];
 
 export default function HomeScreen() {
+  const navigation = useNavigation<any>();
   const [activeCategory, setActiveCategory] = useState('Todo');
   const [search, setSearch] = useState('');
   const insets = useSafeAreaInsets();
@@ -170,7 +172,7 @@ export default function HomeScreen() {
               Basado en tu interés por la naturaleza, hemos preparado una ruta sonora por el
               Parque Nacional del Manu.
             </Text>
-            <Pressable style={({ pressed }) => [styles.featuredBtn, pressed && styles.pressed]}>
+            <Pressable style={({ pressed }) => [styles.featuredBtn, pressed && styles.pressed]} onPress={() => navigation.navigate('ARView')}>
               <Text style={styles.featuredBtnText}>Iniciar Viaje</Text>
             </Pressable>
           </View>
@@ -184,7 +186,7 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.pickTitle}>{item.title}</Text>
             <Text style={styles.pickDesc}>{item.description}</Text>
-            <Pressable style={styles.playBtn}>
+            <Pressable style={styles.playBtn} onPress={() => navigation.navigate('Resultado')}>
               <Text style={styles.playBtnText}>▶</Text>
             </Pressable>
           </View>
@@ -195,6 +197,7 @@ export default function HomeScreen() {
 
       <Pressable
         style={({ pressed }) => [styles.fab, { bottom: fabBottom }, pressed && styles.pressed]}
+        onPress={() => navigation.navigate('Asistente')}
       >
         <Text style={styles.fabIcon}>🎤</Text>
       </Pressable>

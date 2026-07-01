@@ -1,84 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { router, useRouter } from 'expo-router';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  Animated,
-  Dimensions,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const C = {
-  bg: '#F2F1EE',
-  white: '#FFFFFF',
-  dark: '#0D1A0E',
-  greenD: '#1A3A1E',
-  greenM: '#244D28',
-  greenL: '#2E5C33',
-  gold: '#C9A84C',
-  user: '#1E4D24',
-  textDark: '#1A1A1A',
-  textMid: '#444444',
-  muted: '#999999',
-  border: '#E0DED8',
-  voiceBg: '#F7F6F3',
+  bg: '#F2F1EE', white: '#FFFFFF', dark: '#0D1A0E', greenD: '#1A3A1E', greenM: '#244D28', greenL: '#2E5C33',
+  gold: '#C9A84C', user: '#1E4D24', textDark: '#1A1A1A', textMid: '#444444', muted: '#999999', border: '#E0DED8', voiceBg: '#F7F6F3',
 };
 
 type Message = { id: number; text: string; sender: 'ai' | 'user' };
 
 const INITIAL: Message[] = [
-  {
-    id: 1,
-    sender: 'ai',
-    text: '¡Hola! Soy tu guía InkaVoice.\nHoy estamos cerca de Sacsayhuamán. ¿Te gustaría conocer la historia de las piedras talladas o prefieres que te guíe a un mirador cercano?',
-  },
+  { id: 1, sender: 'ai', text: '¡Hola! Soy tu guía InkaVoice.\nHoy estamos cerca de Sacsayhuamán. ¿Te gustaría conocer la historia de las piedras talladas o prefieres que te guíe a un mirador cercano?' },
 ];
 
-const SUGGESTIONS = [
-  '¿Cómo llego desde aquí?',
-  'Dónde comer cerca',
-  'Historia de los Incas',
-  'Ruta Inca Trail',
-];
+const SUGGESTIONS = ['¿Cómo llego desde aquí?', 'Dónde comer cerca', 'Historia de los Incas', 'Ruta Inca Trail'];
 
 const AI_REPLIES: Record<string, string> = {
-  '¿Cómo llego desde aquí?':
-    'Desde tu ubicación actual puedes caminar unos 15 minutos hacia el acceso principal de Sacsayhuamán. 🗺️',
-
-  'Dónde comer cerca':
-    'Cerca encontrarás restaurantes con comida andina tradicional y cafés locales. 🍽️',
-
-  'Historia de los Incas':
-    'El Imperio Inca fue una civilización andina que alcanzó gran expansión entre 1438 y 1533. 📚',
-
-  'Ruta Inca Trail':
-    'La Ruta Inca conecta varios sitios arqueológicos y termina en Machu Picchu. 🏔️',
-
-  '¿Qué puedo visitar cerca de Sacsayhuamán?':
-    'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨',
+  '¿Cómo llego desde aquí?': 'Desde tu ubicación actual puedes caminar unos 15 minutos hacia el acceso principal de Sacsayhuamán. 🗺️',
+  'Dónde comer cerca': 'Cerca encontrarás restaurantes con comida andina tradicional y cafés locales. 🍽️',
+  'Historia de los Incas': 'El Imperio Inca fue una civilización andina que alcanzó gran expansión entre 1438 y 1533. 📚',
+  'Ruta Inca Trail': 'La Ruta Inca conecta varios sitios arqueológicos y termina en Machu Picchu. 🏔️',
+  '¿Qué puedo visitar cerca de Sacsayhuamán?': 'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨',
 };
 
 function WaveBar({ delay, color }: { delay: number; color: string }) {
   const anim = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 500, delay, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
-      ])
-    ).start();
+    Animated.loop(Animated.sequence([
+      Animated.timing(anim, { toValue: 1, duration: 500, delay, useNativeDriver: true }),
+      Animated.timing(anim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
+    ])).start();
   }, []);
   return <Animated.View style={[styles.waveBar, { backgroundColor: color, transform: [{ scaleY: anim }] }]} />;
 }
 
 export default function AsistenteScreen() {
+  const navigation = useNavigation<any>();
   const scrollRef = useRef<ScrollView>(null);
   const micPulse = useRef(new Animated.Value(1)).current;
   const [messages, setMessages] = useState<Message[]>(INITIAL);
@@ -87,44 +47,18 @@ export default function AsistenteScreen() {
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
-    const sendMessage = (text: string) => {
+  const sendMessage = (text: string) => {
     if (!text.trim()) return;
-
-    setMessages(prev => [
-        ...prev,
-        {
-        id: Date.now(),
-        sender: 'user',
-        text,
-        },
-    ]);
-
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text }]);
     setIsTyping(true);
-
     scrollToBottom();
-
     setTimeout(() => {
-
-        const reply =
-        AI_REPLIES[text]
-        ??
-        'Todavía no tengo información específica sobre eso.';
-
-        setMessages(prev => [
-        ...prev,
-        {
-            id: Date.now() + 1,
-            sender: 'ai',
-            text: reply,
-        },
-        ]);
-
-        setIsTyping(false);
-
-        scrollToBottom();
-
+      const reply = AI_REPLIES[text] ?? 'Todavía no tengo información específica sobre eso.';
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: reply }]);
+      setIsTyping(false);
+      scrollToBottom();
     }, 1000);
-    };
+  };
 
   const toggleRecording = () => {
     if (isRecording) {
@@ -145,18 +79,10 @@ export default function AsistenteScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── Top nav ── */}
       <View style={styles.topNav}>
-        <TouchableOpacity
-  style={styles.menuBtn}
-  onPress={() => router.replace('/resultado')}
->
-  <Ionicons
-    name="arrow-back"
-    size={22}
-    color={C.greenD}
-  />
-</TouchableOpacity>
+        <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('Resultado')}>
+          <Ionicons name="arrow-back" size={22} color={C.greenD} />
+        </TouchableOpacity>
         <Text style={styles.brandName}>InkaVoice</Text>
         <View style={styles.topNavRight}>
           <TouchableOpacity style={styles.iconBtn}><Ionicons name="search-outline" size={22} color={C.dark} /></TouchableOpacity>
@@ -164,12 +90,8 @@ export default function AsistenteScreen() {
         </View>
       </View>
 
-      {/* ── Hero ── */}
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Tu Guía Personal de IA</Text>
-      </View>
+      <View style={styles.hero}><Text style={styles.heroTitle}>Tu Guía Personal de IA</Text></View>
 
-      {/* ── Mensajes (Ocupa todo el espacio flexible) ── */}
       <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent}>
         {messages.map(msg => (
           <View key={msg.id} style={[styles.bubbleRow, msg.sender === 'user' && styles.bubbleRowUser]}>
@@ -182,10 +104,14 @@ export default function AsistenteScreen() {
             {msg.sender === 'user' && <View style={styles.userAvatar}><Ionicons name="person" size={15} color={C.gold} /></View>}
           </View>
         ))}
-        {isTyping && <View style={styles.bubbleRow}><View style={styles.aiAvatar}><Text style={{ color: C.white }}>✦</Text></View><View style={[styles.bubble, styles.bubbleAI]}><Text>•••</Text></View></View>}
+        {isTyping && (
+          <View style={styles.bubbleRow}>
+            <View style={styles.aiAvatar}><Text style={{ color: C.white }}>✦</Text></View>
+            <View style={[styles.bubble, styles.bubbleAI]}><Text>•••</Text></View>
+          </View>
+        )}
       </ScrollView>
 
-      {/* ── Sugerencias Fijas abajo ── */}
       <View style={styles.suggestionsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
           {SUGGESTIONS.map(s => (
@@ -196,7 +122,6 @@ export default function AsistenteScreen() {
         </ScrollView>
       </View>
 
-      {/* ── Barra de voz ── */}
       <View style={styles.voiceBar}>
         <View style={styles.waveContainer}>{WAVE_DELAYS.map((d, i) => <WaveBar key={i} delay={d} color={C.greenM} />)}</View>
         <Animated.View style={{ transform: [{ scale: micPulse }] }}>
@@ -212,20 +137,8 @@ export default function AsistenteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  menuBtn: {
-  width: 40,
-  height: 40,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-iconBtn: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+  menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
   brandName: { color: C.dark, fontSize: 16, fontWeight: '700' },
   topNavRight: { flexDirection: 'row', gap: 12 },
@@ -251,5 +164,5 @@ iconBtn: {
   waveBar: { flex: 1, height: 32, borderRadius: 2, maxWidth: 4 },
   micBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: C.greenD, justifyContent: 'center', alignItems: 'center' },
   micBtnActive: { backgroundColor: '#c0392b' },
-  keyboardBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, justifyContent: 'center', alignItems: 'center' }
+  keyboardBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, justifyContent: 'center', alignItems: 'center' },
 });

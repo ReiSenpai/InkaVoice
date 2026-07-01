@@ -14,10 +14,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BrandHeader from '../components/BrandHeader';
 import { colors } from '../theme/colors';
-import type { RootStackParamList } from '../navigation/types';
+//import type { RootStackParamList } from '../navigation/types';
 
 export default function LoginScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
-const C = { dark: '#0D1A0E', green: '#00332D', gold: '#C9A84C', goldL: '#F4D03F', white: '#F5F0E8', gray: '#718096' };
+const C = { dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.beige, gray: colors.gray400 };
 
 export default function CameraScreen() {
   const navigation = useNavigation<any>();

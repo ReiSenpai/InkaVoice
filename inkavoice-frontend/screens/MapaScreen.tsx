@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-const C = { bg: '#E6ECE8', white: '#FFF', green: '#00332D', green2: '#1A3A1E', gold: '#C9A84C', border: '#E6E6E6', text: '#122014', muted: '#666' };
+const C = { bg: colors.background, white: colors.white, green: colors.green, green2: colors.greenDark, gold: colors.gold, border: colors.border, text: colors.greenDark, muted: colors.muted };
 
 const ROUTES = [
   { id: 1, name: 'Ruta Moche', km: '540km', desc: '4 Sitios Arqueológicos', img: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da' },

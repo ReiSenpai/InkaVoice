@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
-const C = { bg: '#F7F4F2', green: '#1E5A46', gold: '#D8B347', text: '#10261D', muted: '#6E7773', white: '#FFF', border: '#E5E5E5' };
+const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.greenDark, muted: colors.muted, white: colors.white, border: colors.border };
 
 const ROUTES = [
   { id: 1, title: 'Dunas de Ica y Oasis', subtitle: 'Huacachina y Paracas', region: 'Costa', duration: '2 Días', level: 'Fácil', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee' },

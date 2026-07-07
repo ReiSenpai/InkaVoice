@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-const C = { bg: '#F3EFE6', dark: '#0D1A0E', green: '#00332D', gold: '#8B6914', goldL: '#C9A84C', white: '#FFFFFF', muted: '#777', card: '#F0EDE3' };
+const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
 
 const CHAPTER_TEXTS: Record<string, { title: string; desc: string }> = {
   ESPAÑOL: { title: 'La Casa de la Gloria del Sol', desc: 'Descubre cómo estas enormes piedras, algunas con más de 100 toneladas, fueron talladas con tal precisión que ni una hoja de papel puede deslizarse entre ellas. Su diseño refleja los cuatro suyos del Tahuantinsuyo.' },

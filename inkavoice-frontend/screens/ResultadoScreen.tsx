@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, Image, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
-const C = { green: '#00332D', gold: '#C9A84C', goldL: '#F4D03F', white: '#FFFFFF', cream: '#F9F5EC', muted: '#555', border: '#E8E8E8', dark: '#0D1A0E' };
+const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
 
 type Lang = 'Español' | 'English' | 'Quechua';
 

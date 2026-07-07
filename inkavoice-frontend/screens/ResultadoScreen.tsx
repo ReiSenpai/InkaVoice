@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, 
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import BottomTabBar from '../components/BottomTabBar';
 
 const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
 
@@ -71,7 +72,7 @@ export default function ResultadoScreen() {
     <View style={styles.container}>
       <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }} style={styles.backgroundImage}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('ARView')}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main', { screen: 'ARView' })}>
             <Ionicons name="arrow-back" size={24} color={C.green} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>InkaVoice</Text>
@@ -127,7 +128,7 @@ export default function ResultadoScreen() {
               </View>
             </>
           )}
-          <View style={{ height: 100 }} />
+          <View style={{ height: 168 }} />
         </View>
       </ScrollView>
 
@@ -159,6 +160,7 @@ export default function ResultadoScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <BottomTabBar active="ARView" />
     </View>
   );
 }
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
   curatorAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#ccc' },
   curatorLabel: { color: C.gold, fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
   curatorText: { color: '#333', fontSize: 14, fontStyle: 'italic', lineHeight: 22 },
-  micButton: { position: 'absolute', bottom: 28, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: C.goldL, justifyContent: 'center', alignItems: 'center', elevation: 8 },
+  micButton: { position: 'absolute', bottom: 96, right: 24, width: 60, height: 60, borderRadius: 30, backgroundColor: C.goldL, justifyContent: 'center', alignItems: 'center', elevation: 8 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: C.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalHandle: { width: 40, height: 4, backgroundColor: '#DDD', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },

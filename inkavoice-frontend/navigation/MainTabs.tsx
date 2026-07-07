@@ -1,34 +1,33 @@
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import MapaScreen from '../screens/MapaScreen';
 import CameraScreen from '../screens/CameraScreen';
 import RecorridoScreen from '../screens/RecorridoScreen';
-import ResultadoScreen from '../screens/ResultadoScreen';
-import AudioguiaScreen from '../screens/AudioguiaScreen';
-import AsistenteScreen from '../screens/AsistenteScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Home: '🏠',
-    Home: '🏠',
-    Discover: '🧭',
-    Routes: '〰',
-    ARView: '◎',
-    History: '🕐',
-    Profile: '👤',
-  };
-  return (
-    <Text style={{ fontSize: focused ? 18 : 16, opacity: focused ? 1 : 0.6 }}>
-      {icons[label] ?? ''}
-    </Text>
-  );
-}
+const LABELS: Record<string, string> = {
+  Home: 'Inicio',
+  Discover: 'Explorar',
+  Routes: 'Rutas',
+  ARView: 'Cámara',
+  History: 'Historial',
+  Profile: 'Perfil',
+};
+
+const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+  Home: { active: 'home', inactive: 'home-outline' },
+  Discover: { active: 'compass', inactive: 'compass-outline' },
+  Routes: { active: 'map', inactive: 'map-outline' },
+  ARView: { active: 'camera', inactive: 'camera-outline' },
+  History: { active: 'time', inactive: 'time-outline' },
+  Profile: { active: 'person', inactive: 'person-outline' },
+};
 
 export default function MainTabs() {
   return (
@@ -38,33 +37,40 @@ export default function MainTabs() {
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.gray500,
         tabBarStyle: {
-          height: 72,
-          paddingTop: 8,
-          paddingBottom: 12,
+          height: 68,
+          paddingTop: 6,
+          paddingBottom: 8,
           borderTopColor: colors.gray100,
           backgroundColor: colors.white,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
-        tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
+        tabBarLabelStyle: {
+          fontSize: 9,
+          fontWeight: '600',
+          marginTop: 2,
+        },
+        tabBarLabel: LABELS[route.name] ?? route.name,
+        tabBarIcon: ({ focused, color, size }) => {
+          const icon = ICONS[route.name];
+          if (!icon) return null;
+          return <Ionicons name={focused ? icon.active : icon.inactive} size={size ?? 22} color={color} />;
+        },
         tabBarActiveBackgroundColor: colors.badgeYellow,
-        tabBarItemStyle: { borderRadius: 16, marginHorizontal: 4, marginVertical: 6 },
+        tabBarItemStyle: {
+          borderRadius: 14,
+          marginHorizontal: 1,
+          marginVertical: 5,
+          paddingHorizontal: 0,
+        },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
-      <Tab.Screen name="Discover" component={MapaScreen} options={{ tabBarLabel: 'Discover' }} />
-      <Tab.Screen name="Routes" component={RecorridoScreen} options={{ tabBarLabel: 'Routes' }} />
-      <Tab.Screen name="ARView" component={CameraScreen} options={{ tabBarLabel: 'AR View' }} />
-      <Tab.Screen name="History" options={{ tabBarLabel: 'History' }}>
-        {() => <PlaceholderScreen title="History" subtitle="Tu historial de viajes" />}
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={MapaScreen} />
+      <Tab.Screen name="Routes" component={RecorridoScreen} />
+      <Tab.Screen name="ARView" component={CameraScreen} />
+      <Tab.Screen name="History">
+        {() => <PlaceholderScreen title="Historial" subtitle="Tu historial de viajes" />}
       </Tab.Screen>
-      <Tab.Screen name="Profile" options={{ tabBarLabel: 'Profile' }}>
-        {() => <PlaceholderScreen title="Profile" subtitle="Tu perfil de viajero" />}
-      </Tab.Screen>
-
-      {/* Pantallas alcanzables por navegación, ocultas de la barra de tabs */}
-      <Tab.Screen name="Resultado" component={ResultadoScreen} options={{ tabBarButton: () => null }} />
-      <Tab.Screen name="Audioguia" component={AudioguiaScreen} options={{ tabBarButton: () => null }} />
-      <Tab.Screen name="Asistente" component={AsistenteScreen} options={{ tabBarButton: () => null }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import BottomTabBar from '../components/BottomTabBar';
 
 const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
 
@@ -53,6 +54,7 @@ export default function AudioguiaScreen() {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate('Resultado')}>
@@ -127,6 +129,8 @@ export default function AudioguiaScreen() {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+      <BottomTabBar active="Discover" />
+    </View>
   );
 }
 

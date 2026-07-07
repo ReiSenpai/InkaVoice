@@ -3,6 +3,9 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Main: undefined;
+  Resultado: { nombre?: string; region?: string } | undefined;
+  Audioguia: { nombre?: string; region?: string } | undefined;
+  Asistente: undefined;
 };
 export type MainTabParamList = {
   Home: undefined;
@@ -11,7 +14,4 @@ export type MainTabParamList = {
   ARView: undefined;
   History: undefined;
   Profile: undefined;
-  Resultado: { nombre?: string; region?: string } | undefined;
-  Audioguia: { nombre?: string; region?: string } | undefined;
-  Asistente: undefined;
 };

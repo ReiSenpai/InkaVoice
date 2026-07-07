@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import BottomTabBar from '../components/BottomTabBar';
 
 const { width } = Dimensions.get('window');
 
@@ -131,6 +133,7 @@ export default function AsistenteScreen() {
         </Animated.View>
         <TouchableOpacity style={styles.keyboardBtn}><Ionicons name="keypad-outline" size={20} color={C.muted} /></TouchableOpacity>
       </View>
+      <BottomTabBar />
     </SafeAreaView>
   );
 }

@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Resultado: { nombre?: string; region?: string } | undefined;
   Audioguia: { nombre?: string; region?: string } | undefined;
   Asistente: undefined;
+  Settings: undefined;
 };
 export type MainTabParamList = {
   Home: undefined;

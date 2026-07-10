@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
 const TABS: { key: string; label: string; active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }[] = [
@@ -15,9 +16,11 @@ const TABS: { key: string; label: string; active: keyof typeof Ionicons.glyphMap
 
 export default function BottomTabBar({ active }: { active?: string }) {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { height: 56 + bottomPad, paddingBottom: bottomPad }]}>
       {TABS.map(tab => {
         const focused = tab.key === active;
         return (
@@ -38,9 +41,7 @@ export default function BottomTabBar({ active }: { active?: string }) {
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    height: 68,
     paddingTop: 6,
-    paddingBottom: 8,
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.gray100,

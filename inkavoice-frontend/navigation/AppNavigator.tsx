@@ -7,6 +7,7 @@ import MainTabs from './MainTabs';
 import ResultadoScreen from '../screens/ResultadoScreen';
 import AudioguiaScreen from '../screens/AudioguiaScreen';
 import AsistenteScreen from '../screens/AsistenteScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,6 +23,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Resultado" component={ResultadoScreen} />
         <Stack.Screen name="Audioguia" component={AudioguiaScreen} />
         <Stack.Screen name="Asistente" component={AsistenteScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

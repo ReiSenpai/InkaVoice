@@ -1,10 +1,11 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/HomeScreen';
 import MapaScreen from '../screens/MapaScreen';
 import CameraScreen from '../screens/CameraScreen';
 import RecorridoScreen from '../screens/RecorridoScreen';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
+import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 import type { MainTabParamList } from './types';
@@ -30,6 +31,9 @@ const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: 
 };
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,9 +41,9 @@ export default function MainTabs() {
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.gray500,
         tabBarStyle: {
-          height: 68,
+          height: 56 + bottomPad,
           paddingTop: 6,
-          paddingBottom: 8,
+          paddingBottom: bottomPad,
           borderTopColor: colors.gray100,
           backgroundColor: colors.white,
         },
@@ -67,9 +71,7 @@ export default function MainTabs() {
       <Tab.Screen name="Discover" component={MapaScreen} />
       <Tab.Screen name="Routes" component={RecorridoScreen} />
       <Tab.Screen name="ARView" component={CameraScreen} />
-      <Tab.Screen name="History">
-        {() => <PlaceholderScreen title="Historial" subtitle="Tu historial de viajes" />}
-      </Tab.Screen>
+      <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, 
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar';
 
 const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
@@ -52,6 +53,7 @@ const LANGUAGES: Lang[] = ['Español', 'English', 'Quechua'];
 
 export default function ResultadoScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [language, setLanguage] = useState<Lang>('Español');
   const [translating, setTranslating] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
@@ -70,13 +72,13 @@ export default function ResultadoScreen() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }} style={styles.backgroundImage}>
+      <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }} style={[styles.backgroundImage, { paddingTop: insets.top + 10 }]}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main', { screen: 'ARView' })}>
             <Ionicons name="arrow-back" size={24} color={C.green} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>InkaVoice</Text>
-          <Ionicons name="settings-outline" size={24} color={C.white} />
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={24} color={C.white} /></TouchableOpacity>
         </View>
         <View style={styles.recognitionBadge}>
           <Text style={styles.recognitionText}>● RECONOCIMIENTO 98%</Text>
@@ -167,7 +169,7 @@ export default function ResultadoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.white },
-  backgroundImage: { height: 280, padding: 20, paddingTop: 50, justifyContent: 'space-between' },
+  backgroundImage: { height: 280, padding: 20, justifyContent: 'space-between' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   backButton: { backgroundColor: C.white, padding: 8, borderRadius: 50, elevation: 5 },

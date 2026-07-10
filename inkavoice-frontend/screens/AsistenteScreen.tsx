@@ -88,7 +88,7 @@ export default function AsistenteScreen() {
         <Text style={styles.brandName}>InkaVoice</Text>
         <View style={styles.topNavRight}>
           <TouchableOpacity style={styles.iconBtn}><Ionicons name="search-outline" size={22} color={C.dark} /></TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn}><Ionicons name="settings-outline" size={22} color={C.dark} /></TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={22} color={C.dark} /></TouchableOpacity>
         </View>
       </View>
 

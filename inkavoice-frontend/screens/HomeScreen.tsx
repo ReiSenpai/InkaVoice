@@ -78,7 +78,7 @@ export default function HomeScreen() {
         <View style={styles.topBar}>
           <Text style={styles.topIcon}>🔍</Text>
           <Text style={styles.topTitle}>InkaVoice</Text>
-          <Text style={styles.topIcon}>⚙</Text>
+          <Pressable onPress={() => navigation.navigate('Settings')}><Text style={styles.topIcon}>⚙</Text></Pressable>
         </View>
 
         <Text style={styles.greeting}>Hola, Viajero</Text>

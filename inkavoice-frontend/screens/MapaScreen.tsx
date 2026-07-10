@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Image
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,17 +22,18 @@ const PINS = [
 
 export default function MapaScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState(1);
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => {}}>
           <Ionicons name="search-outline" size={22} color={C.green} />
         </TouchableOpacity>
         <Text style={styles.title}>InkaVoice</Text>
         <TouchableOpacity>
-          <Ionicons name="settings-outline" size={22} color={C.green} />
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={22} color={C.green} /></TouchableOpacity>
         </TouchableOpacity>
       </View>
 
@@ -79,7 +81,7 @@ export default function MapaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  header: { paddingTop: 55, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white },
+  header: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white },
   title: { fontSize: 28, fontWeight: '800', color: C.green },
   mapArea: { flex: 1 },
   fakeMap: { flex: 1, margin: 18, borderRadius: 30, backgroundColor: '#D8E0DB', overflow: 'hidden' },

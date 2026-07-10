@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image,
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../context/UserContext';
+import { getInitials } from '../utils/initials';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.greenDark, muted: colors.muted, white: colors.white, border: colors.border };
@@ -15,6 +18,8 @@ const ROUTES = [
 
 export default function RecorridoScreen() {
   const navigation = useNavigation<any>();
+  const { photoUri, name } = useUser();
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('Todas');
   const [search, setSearch] = useState('');
 
@@ -25,14 +30,14 @@ export default function RecorridoScreen() {
   }), [filter, search]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={28} color={C.green} />
           </TouchableOpacity>
           <Text style={styles.logo}>InkaVoice</Text>
-          <Image source={{ uri: 'https://i.pravatar.cc/100' }} style={styles.avatar} />
+          {photoUri ? (<Image source={{ uri: photoUri }} style={styles.avatar} />) : (<View style={styles.avatarInitialsWrap}><Text style={styles.avatarInitialsText}>{getInitials(name)}</Text></View>)}
         </View>
 
         <Text style={styles.title}>Planifica tu Expedición</Text>
@@ -90,10 +95,12 @@ export default function RecorridoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg, paddingTop: 55 },
+  container: { flex: 1, backgroundColor: C.bg },
   header: { paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   logo: { fontSize: 28, fontWeight: '800', color: C.green },
   avatar: { width: 40, height: 40, borderRadius: 20 },
+  avatarInitialsWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   title: { padding: 18, fontSize: 50, fontWeight: '800', color: C.text },
   search: { marginHorizontal: 18, height: 54, backgroundColor: '#FFF', borderRadius: 27, paddingHorizontal: 18, alignItems: 'center', flexDirection: 'row' },
   input: { flex: 1, marginLeft: 10 },

@@ -1,16 +1,58 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActionSheetIOS, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActionSheetIOS, Platform, Modal, ScrollView, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../context/UserContext';
+import { getInitials } from '../utils/initials';
 import { colors } from '../theme/colors';
 
+const STATS = [
+  { id: 'sitios', icon: 'location-outline', value: 12, label: 'SITIOS VISITADOS' },
+  { id: 'memorias', icon: 'mic-outline', value: 156, label: 'MEMORIAS' },
+  { id: 'regiones', icon: 'earth-outline', value: 3, label: 'REGIONES' },
+];
+
+const REGION_PROGRESS = [
+  { region: 'Costa', pct: 100 },
+  { region: 'Sierra', pct: 45 },
+  { region: 'Selva', pct: 12 },
+];
+
+const OVERALL_PROGRESS = 64;
+
+type Badge = {
+  id: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  unlocked: boolean;
+};
+
+const BADGES: Badge[] = [
+  { id: 'centinela', icon: 'triangle-outline', title: 'Centinela de los Andes', description: 'Visitaste 5 sitios en la región Sierra.', unlocked: true },
+  { id: 'voz', icon: 'water-outline', title: 'Voz del Pacífico', description: 'Escuchaste 10 audioguías en la Costa.', unlocked: true },
+  { id: 'cronista', icon: 'document-text-outline', title: 'Cronista Real', description: 'Guardaste 20 memorias sonoras.', unlocked: true },
+  { id: 'alma', icon: 'leaf-outline', title: 'Alma Amazónica', description: 'Visita 3 sitios en la Selva para desbloquear.', unlocked: false },
+  { id: 'primer-inca', icon: 'star-outline', title: 'Primer Inca', description: 'Completa tu primera ruta guiada.', unlocked: false },
+  { id: 'arquitecto', icon: 'construct-outline', title: 'Gran Arquitecto', description: 'Explora 5 sitios arqueológicos distintos.', unlocked: false },
+];
+
+type Memory = { id: string; title: string; subtitle: string };
+
+const INITIAL_MEMORIES: Memory[] = [
+  { id: '1', title: 'El rugir de Paracas', subtitle: 'Costa · Memoria sonora' },
+  { id: '2', title: 'Cantos de Madre de Dios', subtitle: 'Selva · Memoria sonora' },
+];
+
 export default function ProfileScreen() {
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const { photoUri, setPhotoUri, name } = useUser();
   const [modalVisible, setModalVisible] = useState(false);
-  
-  // Solo usaremos el inset TOP para la barra de notificaciones de arriba.
-  // Dejamos que React Navigation controle el BOTTOM de los botones del celular.
+  const [memoryModalVisible, setMemoryModalVisible] = useState(false);
+  const [newMemoryText, setNewMemoryText] = useState('');
+  const [memories, setMemories] = useState<Memory[]>(INITIAL_MEMORIES);
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
   const removePhoto = () => {
@@ -75,44 +117,130 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleBadgePress = (badge: Badge) => {
+    Alert.alert(badge.unlocked ? `🏅 ${badge.title}` : `🔒 ${badge.title}`, badge.description);
+  };
+
+  const openNewMemoryModal = () => {
+    setNewMemoryText('');
+    setMemoryModalVisible(true);
+  };
+
+  const confirmNewMemory = () => {
+    const text = newMemoryText.trim();
+    if (!text) {
+      setMemoryModalVisible(false);
+      return;
+    }
+    setMemories(prev => [{ id: Date.now().toString(), title: text, subtitle: 'Nueva región · Memoria sonora' }, ...prev]);
+    setMemoryModalVisible(false);
+  };
+
   return (
-    // FIX PRINCIPAL: Solo le damos el padding de arriba para la barra de estado.
-    // Quitamos cualquier padding inferior dinámico del contenedor para que no empuje tu barra de navegación.
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
-      
       <View style={styles.header}>
         <Text style={styles.headerTitle}>InkaVoice</Text>
-        <Ionicons name="settings-outline" size={22} color={colors.green} />
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={22} color={colors.green} /></TouchableOpacity>
       </View>
 
-      <View style={styles.avatarSection}>
-        <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={48} color={colors.gray400} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
+              </View>
+            )}
+            <View style={styles.editBadge}>
+              <Ionicons name="camera" size={16} color={colors.white} />
             </View>
-          )}
-          <View style={styles.editBadge}>
-            <Ionicons name="camera" size={16} color={colors.white} />
+          </TouchableOpacity>
+
+          <Text style={styles.name}>{name}</Text>
+          <TouchableOpacity onPress={handleChangePhoto}>
+            <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.statsRow}>
+          {STATS.map(stat => (
+            <View key={stat.id} style={styles.statCard}>
+              <Ionicons name={stat.icon as any} size={20} color={colors.green} />
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <View>
+              <Text style={styles.progressTitle}>Exploración del Perú</Text>
+              <Text style={styles.progressSubtitle}>Camino a ser "Leyenda de los Andes"</Text>
+            </View>
+            <Text style={styles.progressPct}>{OVERALL_PROGRESS}%</Text>
           </View>
-        </TouchableOpacity>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${OVERALL_PROGRESS}%` }]} />
+          </View>
+          <View style={styles.regionLegend}>
+            {REGION_PROGRESS.map(r => (
+              <Text key={r.region} style={styles.regionLegendText}>{r.region}: {r.pct}%</Text>
+            ))}
+          </View>
+        </View>
 
-        <Text style={styles.name}>Nombre de Usuario</Text>
-        <TouchableOpacity onPress={handleChangePhoto}>
-          <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Insignias Culturales</Text>
+          <TouchableOpacity onPress={() => Alert.alert('Todas las insignias', `Tienes ${BADGES.filter(b => b.unlocked).length} de ${BADGES.length} insignias desbloqueadas.`)}>
+            <Text style={styles.sectionLink}>Ver todas</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.badgesGrid}>
+          {BADGES.map(badge => (
+            <TouchableOpacity key={badge.id} style={styles.badgeCard} onPress={() => handleBadgePress(badge)}>
+              <View style={[styles.badgeIconWrap, !badge.unlocked && styles.badgeIconWrapLocked]}>
+                <Ionicons name={badge.icon} size={26} color={badge.unlocked ? colors.gold : colors.gray400} />
+              </View>
+              <Text style={[styles.badgeTitle, !badge.unlocked && styles.badgeTitleLocked]}>{badge.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* --- MENÚ INFERIOR CONTROLADO VISUALMENTE --- */}
-      {modalVisible && (
-        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          {/* Al menú flotante le damos un padding fijo estándar para Android (35), sin chocar con tus tabs */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Memorias Destacadas</Text>
+        </View>
+        {memories.map(memory => (
+          <TouchableOpacity
+            key={memory.id}
+            style={styles.memoryCard}
+            onPress={() => Alert.alert(memory.title, 'Reproduciendo memoria sonora... (demo)')}
+          >
+            <View style={styles.memoryIconWrap}>
+              <Ionicons name="play-circle" size={28} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.memoryTitle}>{memory.title}</Text>
+              <Text style={styles.memorySubtitle}>{memory.subtitle}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity style={styles.newMemoryBtn} onPress={openNewMemoryModal}>
+          <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+          <Text style={styles.newMemoryText}>Nueva Memoria</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Modal: cambiar foto */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
           <View style={[styles.modalContent, { paddingBottom: 35 }]}>
             <Text style={styles.modalTitle}>Foto de perfil</Text>
             <Text style={styles.modalSubtitle}>¿Qué deseas hacer?</Text>
-            
+
             <TouchableOpacity style={styles.modalOption} onPress={takePhoto}>
               <Ionicons name="camera-outline" size={22} color={colors.green} style={styles.modalIcon} />
               <Text style={styles.modalOptionText}>Tomar foto</Text>
@@ -126,126 +254,113 @@ export default function ProfileScreen() {
             {photoUri && (
               <TouchableOpacity style={styles.modalOption} onPress={removePhoto}>
                 <Ionicons name="trash-outline" size={22} color="#D32F2F" style={styles.modalIcon} />
-                <Text style={[styles.modalOptionText, { color: '#D32F2F', fontWeight: '700' }]}>
-                  Eliminar foto actual
-                </Text>
+                <Text style={[styles.modalOptionText, { color: '#D32F2F', fontWeight: '700' }]}>Eliminar foto actual</Text>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity 
-              style={[styles.modalOption, { borderBottomWidth: 0, marginTop: 12, justifyContent: 'center' }]} 
+            <TouchableOpacity
+              style={[styles.modalOption, { borderBottomWidth: 0, marginTop: 12, justifyContent: 'center' }]}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={[styles.modalOptionText, { color: colors.gray400, fontWeight: '700' }]}>
-                Cancelar
-              </Text>
+              <Text style={[styles.modalOptionText, { color: colors.gray400, fontWeight: '700' }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
-        </Pressable>
-      )}
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Modal: nueva memoria (funciona igual en Android e iOS) */}
+      <Modal visible={memoryModalVisible} transparent animationType="fade" onRequestClose={() => setMemoryModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMemoryModalVisible(false)}>
+            <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { paddingBottom: 24 }]}>
+              <Text style={styles.modalTitle}>Nueva memoria</Text>
+              <Text style={styles.modalSubtitle}>Dale un nombre a tu nueva memoria sonora</Text>
+
+              <TextInput
+                value={newMemoryText}
+                onChangeText={setNewMemoryText}
+                placeholder="Ej. El eco de Choquequirao"
+                placeholderTextColor={colors.gray400}
+                style={styles.memoryInput}
+                autoFocus
+              />
+
+              <View style={styles.memoryModalActions}>
+                <TouchableOpacity style={styles.memoryModalCancel} onPress={() => setMemoryModalVisible(false)}>
+                  <Text style={styles.memoryModalCancelText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.memoryModalConfirm} onPress={confirmNewMemory}>
+                  <Text style={styles.memoryModalConfirmText}>Guardar</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
+  scrollContent: { paddingBottom: 40 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
-  avatarSection: { alignItems: 'center', paddingHorizontal: 20 },
-  avatarWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 20,
-    marginBottom: 16,
-    position: 'relative',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: colors.gold,
-  },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 20,
-    backgroundColor: colors.gray100,
-    borderWidth: 3,
-    borderColor: colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editBadge: {
-    position: 'absolute',
-    bottom: -6,
-    right: -6,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.white,
-  },
+  avatarSection: { alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
+  avatarWrapper: { width: 120, height: 120, borderRadius: 20, marginBottom: 16, position: 'relative' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 20, borderWidth: 3, borderColor: colors.gold },
+  avatarInitials: { fontSize: 36, fontWeight: '800', color: colors.green },
+  avatarPlaceholder: { width: '100%', height: '100%', borderRadius: 20, backgroundColor: colors.gray100, borderWidth: 3, borderColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  editBadge: { position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white },
   name: { fontSize: 22, fontWeight: '700', color: colors.green, marginBottom: 4 },
   changePhotoText: { fontSize: 13, color: colors.teal, fontWeight: '600' },
 
-  /* NUEVOS ESTILOS OPTIMIZADOS PARA BOTTOM-TABS */
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    // Aseguramos que se dibuje por encima de la pantalla del perfil,
-    // pero sin reordenar ni alterar los contenedores del Bottom Tab Navigation de Android.
-    zIndex: 10, 
-  },
-  modalContent: {
-    backgroundColor: colors.white || '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.green,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: colors.gray400 || '#888888',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalIcon: {
-    marginRight: 14,
-    width: 24,
-    textAlign: 'center',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
-  },
+  statsRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
+  statCard: { flex: 1, backgroundColor: colors.gray100, borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
+  statValue: { fontSize: 22, fontWeight: '800', color: colors.green },
+  statLabel: { fontSize: 9, fontWeight: '700', color: colors.gray500, textAlign: 'center', letterSpacing: 0.5 },
+
+  progressSection: { paddingHorizontal: 20, marginBottom: 28 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  progressTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
+  progressSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  progressPct: { fontSize: 18, fontWeight: '800', color: colors.gold },
+  progressTrack: { height: 8, borderRadius: 4, backgroundColor: colors.gray200, overflow: 'hidden', marginBottom: 10 },
+  progressFill: { height: '100%', backgroundColor: colors.gold, borderRadius: 4 },
+  regionLegend: { flexDirection: 'row', justifyContent: 'space-between' },
+  regionLegendText: { fontSize: 11, color: colors.gray500, fontWeight: '600' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
+  sectionLink: { fontSize: 12, fontWeight: '600', color: colors.teal },
+
+  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 28 },
+  badgeCard: { width: '30%', alignItems: 'center', gap: 8 },
+  badgeIconWrap: { width: 64, height: 64, borderRadius: 16, backgroundColor: colors.beige, alignItems: 'center', justifyContent: 'center' },
+  badgeIconWrapLocked: { backgroundColor: colors.gray100 },
+  badgeTitle: { fontSize: 11, fontWeight: '600', color: colors.green, textAlign: 'center' },
+  badgeTitleLocked: { color: colors.gray400 },
+
+  memoryCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 10, backgroundColor: colors.greenDark, borderRadius: 14, padding: 14, gap: 12 },
+  memoryIconWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  memoryTitle: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  memorySubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 },
+
+  newMemoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 12, backgroundColor: colors.gold, borderRadius: 14, paddingVertical: 16 },
+  newMemoryText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+
+  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end', zIndex: 10 },
+  modalContent: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 4 },
+  modalSubtitle: { fontSize: 14, color: colors.gray400, textAlign: 'center', marginBottom: 16 },
+  modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalIcon: { marginRight: 14, width: 24, textAlign: 'center' },
+  modalOptionText: { fontSize: 16, fontWeight: '500', color: '#333333' },
+
+  memoryInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1f2937', marginBottom: 16 },
+  memoryModalActions: { flexDirection: 'row', gap: 12 },
+  memoryModalCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  memoryModalCancelText: { color: colors.gray500, fontWeight: '700' },
+  memoryModalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center' },
+  memoryModalConfirmText: { color: colors.white, fontWeight: '700' },
 });

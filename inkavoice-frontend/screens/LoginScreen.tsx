@@ -14,15 +14,25 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BrandHeader from '../components/BrandHeader';
 import { colors } from '../theme/colors';
+import { useUser } from '../context/UserContext';
 //import type { RootStackParamList } from '../navigation/types';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
+  const { setName } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const goToMain = () => navigation.replace('Main');
+  const goToGuest = () => {
+    setName('Invitado');
+    navigation.replace('Main');
+  };
+
+  const goToMain = () => {
+    setName(email.split('@')[0] || 'Usuario');
+    navigation.replace('Main');
+  };
 
   const Container = Platform.OS === 'web' ? View : SafeAreaView;
 
@@ -101,7 +111,7 @@ export default function LoginScreen() {
 
             <Pressable
               style={({ pressed }) => [styles.guestBtn, pressed && styles.pressed]}
-              onPress={goToMain}
+              onPress={goToGuest}
             >
               <Text style={styles.guestIcon}>👤</Text>
               <Text style={styles.guestBtnText}>Continuar como invitado</Text>

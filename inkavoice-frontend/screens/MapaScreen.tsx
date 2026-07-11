@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { colors } from '../theme/colors';
+import { useLanguage } from '../context/LanguageContext';
+import { useAlert } from '../context/AlertContext';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,10 +29,10 @@ const ZONE_REGIONS: Record<ZoneKey, Region> = {
   selva: { latitude: -6.5, longitude: -74.5, latitudeDelta: 8, longitudeDelta: 8 },
 };
 
-const ZONES: { key: ZoneKey; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { key: 'costa', label: 'Costa', icon: 'water', color: '#F4D03F' },
-  { key: 'sierra', label: 'Sierra', icon: 'triangle', color: '#8D6E63' },
-  { key: 'selva', label: 'Selva', icon: 'leaf', color: '#2E7D32' },
+const ZONES: { key: ZoneKey; labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
+  { key: 'costa', labelKey: 'category_coast', icon: 'water', color: '#F4D03F' },
+  { key: 'sierra', labelKey: 'category_highlands', icon: 'triangle', color: '#8D6E63' },
+  { key: 'selva', labelKey: 'category_jungle', icon: 'leaf', color: '#2E7D32' },
 ];
 
 const CATEGORY_ICON: Record<Category, keyof typeof Ionicons.glyphMap> = {
@@ -89,6 +91,8 @@ const ROUTES: Record<ZoneKey, { id: number; name: string; km: string; desc: stri
 export default function MapaScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const { alert } = useAlert();
   const mapRef = useRef<MapView>(null);
   const [activeZone, setActiveZone] = useState<ZoneKey | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -121,7 +125,7 @@ export default function MapaScreen() {
     if (!userLocation) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso necesario', 'Necesitamos acceso a tu ubicación para mostrarla en el mapa.');
+        alert(t('map_permission_title'), t('map_permission_message'));
         return;
       }
       const position = await Location.getCurrentPositionAsync({});
@@ -161,7 +165,7 @@ export default function MapaScreen() {
             onPress={() => goToZone(zone.key)}
           >
             <Ionicons name={zone.icon} size={16} color={activeZone === zone.key ? '#FFF' : C.muted} />
-            <Text style={[styles.zoneTabText, activeZone === zone.key && { color: '#FFF' }]}>{zone.label}</Text>
+            <Text style={[styles.zoneTabText, activeZone === zone.key && { color: '#FFF' }]}>{t(zone.labelKey)}</Text>
           </TouchableOpacity>
         ))}
         {activeZone && (
@@ -217,7 +221,7 @@ export default function MapaScreen() {
           <View style={styles.siteCardBody}>
             <View style={styles.siteCardBadge}>
               <Ionicons name={CATEGORY_ICON[selectedSite.category]} size={12} color={C.green} />
-              <Text style={styles.siteCardBadgeText}>{selectedSite.category === 'arqueologico' ? 'Arqueológico' : selectedSite.category === 'natural' ? 'Natural' : 'Colonial'}</Text>
+              <Text style={styles.siteCardBadgeText}>{selectedSite.category === 'arqueologico' ? t('map_category_archaeological') : selectedSite.category === 'natural' ? t('map_category_natural') : t('map_category_colonial')}</Text>
             </View>
             <Text style={styles.siteCardTitle}>{selectedSite.name}</Text>
             <Text style={styles.siteCardDesc} numberOfLines={2}>{selectedSite.shortDesc}</Text>
@@ -225,7 +229,7 @@ export default function MapaScreen() {
               style={styles.siteCardBtn}
               onPress={() => navigation.navigate('Resultado', { siteName: selectedSite.name })}
             >
-              <Text style={styles.siteCardBtnText}>Ver detalles</Text>
+              <Text style={styles.siteCardBtnText}>{t('map_view_details')}</Text>
               <Ionicons name="arrow-forward" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -248,7 +252,7 @@ export default function MapaScreen() {
             onPress={() => navigation.navigate('Routes', selectedRoute ? { routeId: selectedRoute } : undefined)}
           >
             <Ionicons name="add-circle" size={22} color="#FFF" />
-            <Text style={styles.startText}>Iniciar Nuevo Recorrido</Text>
+            <Text style={styles.startText}>{t('map_start_route')}</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -141,7 +141,7 @@ export default function CameraScreen() {
         )}
         {scanned && (
           <View style={styles.resultRow}>
-            <TouchableOpacity style={styles.resultPill} onPress={() => navigation.navigate('Resultado')}>
+            <TouchableOpacity style={styles.resultPill} onPress={() => navigation.navigate('Resultado', { photoUri: capturedUri })}>
               <View style={styles.resultDot} />
               <Text style={styles.resultText}>Intihuatana · 98% — Ver detalles →</Text>
             </TouchableOpacity>

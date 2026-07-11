@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
+import { useAlert } from '../context/AlertContext';
 import { getInitials } from '../utils/initials';
 import { colors } from '../theme/colors';
 
@@ -48,6 +49,7 @@ const INITIAL_MEMORIES: Memory[] = [
 
 export default function ProfileScreen() {
   const { photoUri, setPhotoUri, name } = useUser();
+  const { alert } = useAlert();
   const [modalVisible, setModalVisible] = useState(false);
   const [memoryModalVisible, setMemoryModalVisible] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
@@ -57,7 +59,7 @@ export default function ProfileScreen() {
 
   const removePhoto = () => {
     setModalVisible(false);
-    Alert.alert('Eliminar foto', '¿Seguro que quieres quitar tu foto de perfil?', [
+    alert('Eliminar foto', '¿Seguro que quieres quitar tu foto de perfil?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => setPhotoUri(null) },
     ]);
@@ -67,7 +69,7 @@ export default function ProfileScreen() {
     setModalVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para elegir una foto.');
+      alert('Permiso necesario', 'Necesitamos acceso a tu galería para elegir una foto.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,13 +87,12 @@ export default function ProfileScreen() {
     setModalVisible(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu cámara para tomar una foto.');
+      alert('Permiso necesario', 'Necesitamos acceso a tu cámara para tomar una foto.');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      allowsEditing: false,
+      quality: 0.5,
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
       setPhotoUri(result.assets[0].uri);
@@ -118,7 +119,7 @@ export default function ProfileScreen() {
   };
 
   const handleBadgePress = (badge: Badge) => {
-    Alert.alert(badge.unlocked ? `🏅 ${badge.title}` : `🔒 ${badge.title}`, badge.description);
+    alert(badge.unlocked ? `🏅 ${badge.title}` : `🔒 ${badge.title}`, badge.description);
   };
 
   const openNewMemoryModal = () => {
@@ -194,7 +195,7 @@ export default function ProfileScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Insignias Culturales</Text>
-          <TouchableOpacity onPress={() => Alert.alert('Todas las insignias', `Tienes ${BADGES.filter(b => b.unlocked).length} de ${BADGES.length} insignias desbloqueadas.`)}>
+          <TouchableOpacity onPress={() => alert('Todas las insignias', `Tienes ${BADGES.filter(b => b.unlocked).length} de ${BADGES.length} insignias desbloqueadas.`)}>
             <Text style={styles.sectionLink}>Ver todas</Text>
           </TouchableOpacity>
         </View>
@@ -216,7 +217,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             key={memory.id}
             style={styles.memoryCard}
-            onPress={() => Alert.alert(memory.title, 'Reproduciendo memoria sonora... (demo)')}
+            onPress={() => alert(memory.title, 'Reproduciendo memoria sonora... (demo)')}
           >
             <View style={styles.memoryIconWrap}>
               <Ionicons name="play-circle" size={28} color={colors.white} />
@@ -268,7 +269,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal: nueva memoria (funciona igual en Android e iOS) */}
       <Modal visible={memoryModalVisible} transparent animationType="fade" onRequestClose={() => setMemoryModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMemoryModalVisible(false)}>

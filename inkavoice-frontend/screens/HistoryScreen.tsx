@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { useAlert } from '../context/AlertContext';
 
 const STATS = [
   { id: 'sitios', icon: 'flag-outline', value: 24, label: 'SITIOS VISITADOS' },
@@ -61,6 +62,7 @@ const TIMELINE: TimelineItem[] = [
 export default function HistoryScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { alert } = useAlert();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
@@ -98,7 +100,7 @@ export default function HistoryScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Favoritos</Text>
-          <TouchableOpacity onPress={() => Alert.alert('Favoritos', `Tienes ${FAVORITES.length} sitios marcados como favoritos.`)}>
+          <TouchableOpacity onPress={() => alert('Favoritos', `Tienes ${FAVORITES.length} sitios marcados como favoritos.`)}>
             <Text style={styles.sectionLink}>Ver todos</Text>
           </TouchableOpacity>
         </View>

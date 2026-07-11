@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -17,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AuthTopBar from '../components/AuthTopBar';
 import { colors } from '../theme/colors';
 import { useUser } from '../context/UserContext';
+import { useAlert } from '../context/AlertContext';
 import type { RootStackParamList } from '../navigation/types';
 
 type Language = 'es' | 'en' | 'qu';
@@ -50,6 +50,7 @@ const INTERESTS = [
 export default function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { setName } = useUser();
+  const { alert } = useAlert();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,7 +70,7 @@ export default function RegisterScreen() {
 
   const handleCreateAccount = () => {
     setName(fullName.trim() || 'Usuario');
-    Alert.alert('Cuenta creada', 'Tu cuenta se creó correctamente. Ahora inicia sesión para continuar.', [
+    alert('Cuenta creada', 'Tu cuenta se creó correctamente. Ahora inicia sesión para continuar.', [
       { text: 'OK', onPress: () => navigation.replace('Login') },
     ]);
   };

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAlert } from '../context/AlertContext';
 import { colors } from '../theme/colors';
 
 type SettingItem = {
@@ -24,14 +25,15 @@ const ITEMS: SettingItem[] = [
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { alert } = useAlert();
   const [darkMode, setDarkMode] = useState(false);
 
   const handleItemPress = (item: SettingItem) => {
-    Alert.alert(item.title, item.subtitle);
+    alert(item.title, item.subtitle);
   };
 
   const handleLogout = () => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
+    alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Cerrar sesión',
@@ -87,7 +89,7 @@ export default function SettingsScreen() {
               value={darkMode}
               onValueChange={(value) => {
                 setDarkMode(value);
-                Alert.alert('Modo Oscuro', value ? 'Activado (vista previa, aún no aplicado a toda la app).' : 'Desactivado.');
+                alert('Modo Oscuro', value ? 'Activado (vista previa, aún no aplicado a toda la app).' : 'Desactivado.');
               }}
               trackColor={{ false: colors.gray200, true: colors.green }}
               thumbColor={colors.white}

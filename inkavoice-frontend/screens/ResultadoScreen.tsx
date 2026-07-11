@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, Image, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomTabBar from '../components/BottomTabBar';
 
@@ -51,14 +51,20 @@ const CONTENT: Record<Lang, { region: string; title: string; description: string
 
 const LANGUAGES: Lang[] = ['Español', 'English', 'Quechua'];
 
+// Imagen de respaldo si el usuario llega a esta pantalla sin haber tomado/elegido una foto
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000';
+
 export default function ResultadoScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const [language, setLanguage] = useState<Lang>('Español');
   const [translating, setTranslating] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
 
   const content = CONTENT[language];
+  const photoUri: string | undefined = route.params?.photoUri;
+  const backgroundSource = photoUri ? { uri: photoUri } : { uri: FALLBACK_IMAGE };
 
   const handleSelectLang = (lang: Lang) => {
     setShowLangModal(false);
@@ -72,7 +78,7 @@ export default function ResultadoScreen() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }} style={[styles.backgroundImage, { paddingTop: insets.top + 10 }]}>
+      <ImageBackground source={backgroundSource} style={[styles.backgroundImage, { paddingTop: insets.top + 10 }]}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main', { screen: 'ARView' })}>
             <Ionicons name="arrow-back" size={24} color={C.green} />

@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LANGUAGE_LABELS, LanguageCode } from '../i18n/translations';
+import { Modal } from 'react-native';
 import { colors } from '../theme/colors';
 
 type SettingItem = {
@@ -18,7 +21,6 @@ type SettingItem = {
 const ITEMS: SettingItem[] = [
   { id: 'sos', icon: 'warning', iconBg: '#FDE8E8', iconColor: '#D64545', title: 'Emergencia SOS', subtitle: 'Asistencia inmediata y contactos de emergencia' },
   { id: 'idioma', icon: 'language', iconBg: '#E3F6EC', iconColor: '#1E8A5F', title: 'Idioma y Voz', subtitle: 'Español, Narración: Quechua-Accented' },
-  { id: 'accesibilidad', icon: 'accessibility', iconBg: '#FEF6DC', iconColor: '#C9A227', title: 'Accesibilidad', subtitle: 'Tamaño de texto, Alto contraste' },
   { id: 'descargas', icon: 'download-outline', iconBg: '#EDEDED', iconColor: '#555555', title: 'Gestión de Descargas', subtitle: '1.2 GB utilizados · Solo por Wi-Fi' },
 ];
 
@@ -26,9 +28,15 @@ export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { alert } = useAlert();
+  const { language, setLanguage, t } = useLanguage();
+  const [langModalVisible, setLangModalVisible] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
   const handleItemPress = (item: SettingItem) => {
+    if (item.id === 'idioma') {
+      setLangModalVisible(true);
+      return;
+    }
     alert(item.title, item.subtitle);
   };
 
@@ -113,6 +121,35 @@ export default function SettingsScreen() {
           <Text style={styles.footerTagline}>Hecho con respeto por el legado Peruano</Text>
         </View>
       </ScrollView>
+
+      <Modal visible={langModalVisible} transparent animationType="fade" onRequestClose={() => setLangModalVisible(false)}>
+        <View style={styles.langModalOverlay}>
+          <View style={styles.langModalCard}>
+            <Text style={styles.langModalTitle}>{t("settings_lang_title")}</Text>
+            {(["es", "en", "qu"] as LanguageCode[]).map((code) => {
+              const selected = language === code;
+              return (
+                <TouchableOpacity
+                  key={code}
+                  style={[styles.langOption, selected && styles.langOptionActive]}
+                  onPress={() => {
+                    setLanguage(code);
+                    setLangModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.langOptionText, selected && styles.langOptionTextActive]}>
+                    {LANGUAGE_LABELS[code]}
+                  </Text>
+                  {selected && <Ionicons name="checkmark-circle" size={20} color={colors.green} />}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity style={styles.langModalClose} onPress={() => setLangModalVisible(false)}>
+              <Text style={styles.langModalCloseText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -136,4 +173,13 @@ const styles = StyleSheet.create({
   footer: { alignItems: 'center', marginTop: 32, gap: 6 },
   footerVersion: { fontSize: 11, fontWeight: '700', color: colors.gray400, letterSpacing: 1, marginTop: 8 },
   footerTagline: { fontSize: 11, color: colors.gray400 },
+  langModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 32 },
+  langModalCard: { width: '100%', backgroundColor: colors.white, borderRadius: 20, padding: 20 },
+  langModalTitle: { fontSize: 17, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 16 },
+  langOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, marginBottom: 8, backgroundColor: colors.gray100 },
+  langOptionActive: { backgroundColor: '#E3F6EC' },
+  langOptionText: { fontSize: 15, fontWeight: '600', color: '#333' },
+  langOptionTextActive: { color: colors.green },
+  langModalClose: { marginTop: 8, paddingVertical: 12, alignItems: 'center' },
+  langModalCloseText: { color: colors.gray500, fontWeight: '700' },
 });

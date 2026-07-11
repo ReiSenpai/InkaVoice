@@ -10,11 +10,17 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
 
 const TAB_BAR_HEIGHT = 72;
 
-const CATEGORIES = ['Todo', 'Costa', 'Sierra', 'Selva'];
+const CATEGORIES = [
+  { id: 'Todo', labelKey: 'category_all' },
+  { id: 'Costa', labelKey: 'category_coast' },
+  { id: 'Sierra', labelKey: 'category_highlands' },
+  { id: 'Selva', labelKey: 'category_jungle' },
+];
 
 const RECOMMENDED = [
   {
@@ -61,6 +67,7 @@ const AI_PICKS = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('Todo');
   const [search, setSearch] = useState('');
   const insets = useSafeAreaInsets();
@@ -81,9 +88,9 @@ export default function HomeScreen() {
           <Pressable onPress={() => navigation.navigate('Settings')}><Text style={styles.topIcon}>⚙</Text></Pressable>
         </View>
 
-        <Text style={styles.greeting}>Hola, Viajero</Text>
+        <Text style={styles.greeting}>{t('home_greeting')}</Text>
         <Text style={styles.greetingSub}>
-          Explora los susurros de la historia peruana a través de nuestra guía inteligente de voz.
+          {t('home_greeting_sub')}
         </Text>
 
         <View style={styles.searchBar}>
@@ -91,7 +98,7 @@ export default function HomeScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Busca monumentos, regiones o histori..."
+            placeholder={t("home_search_placeholder")}
             placeholderTextColor={colors.gray400}
             style={styles.searchInput}
           />
@@ -104,15 +111,15 @@ export default function HomeScreen() {
           contentContainerStyle={styles.categoriesRow}
         >
           {CATEGORIES.map((item) => {
-            const active = activeCategory === item;
+            const active = activeCategory === item.id;
             return (
               <Pressable
-                key={item}
+                key={item.id}
                 style={[styles.categoryPill, active && styles.categoryPillActive]}
-                onPress={() => setActiveCategory(item)}
+                onPress={() => setActiveCategory(item.id)}
               >
                 <Text style={[styles.categoryText, active && styles.categoryTextActive]}>
-                  {item}
+                  {t(item.labelKey)}
                 </Text>
               </Pressable>
             );
@@ -121,10 +128,10 @@ export default function HomeScreen() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionLabel}>RECOMENDADO</Text>
-            <Text style={styles.sectionTitle}>Descubrir Maravillas</Text>
+            <Text style={styles.sectionLabel}>{t('home_recommended_label')}</Text>
+            <Text style={styles.sectionTitle}>{t('home_recommended_title')}</Text>
           </View>
-          <Text style={styles.sectionLink}>Ver todas →</Text>
+          <Text style={styles.sectionLink}>{t('home_view_all')}</Text>
         </View>
 
         <ScrollView
@@ -152,7 +159,7 @@ export default function HomeScreen() {
 
         <View style={styles.aiHeader}>
           <Text style={styles.aiIcon}>✨</Text>
-          <Text style={styles.aiTitle}>Para ti, según la IA</Text>
+          <Text style={styles.aiTitle}>{t('home_ai_title')}</Text>
         </View>
 
         <View style={styles.featuredCard}>
@@ -166,14 +173,13 @@ export default function HomeScreen() {
             <View style={styles.featuredImageOverlay} />
           </ImageBackground>
           <View style={styles.featuredBody}>
-            <Text style={styles.featuredLabel}>DESCUBRIMIENTO SEMANAL</Text>
-            <Text style={styles.featuredTitle}>Secretos de la Amazonía</Text>
+            <Text style={styles.featuredLabel}>{t('home_featured_label')}</Text>
+            <Text style={styles.featuredTitle}>{t('home_featured_title')}</Text>
             <Text style={styles.featuredDesc}>
-              Basado en tu interés por la naturaleza, hemos preparado una ruta sonora por el
-              Parque Nacional del Manu.
+              {t('home_featured_desc')}
             </Text>
             <Pressable style={({ pressed }) => [styles.featuredBtn, pressed && styles.pressed]} onPress={() => navigation.navigate('ARView')}>
-              <Text style={styles.featuredBtnText}>Iniciar Viaje</Text>
+              <Text style={styles.featuredBtnText}>{t('home_featured_btn')}</Text>
             </Pressable>
           </View>
         </View>

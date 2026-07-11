@@ -8,17 +8,18 @@ import RecorridoScreen from '../screens/RecorridoScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
+import { useLanguage } from '../context/LanguageContext';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const LABELS: Record<string, string> = {
-  Home: 'Inicio',
-  Discover: 'Explorar',
-  Routes: 'Rutas',
-  ARView: 'Cámara',
-  History: 'Historial',
-  Profile: 'Perfil',
+const TAB_KEYS: Record<string, string> = {
+  Home: 'tab_home',
+  Discover: 'tab_discover',
+  Routes: 'tab_routes',
+  ARView: 'tab_arview',
+  History: 'tab_history',
+  Profile: 'tab_profile',
 };
 
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
@@ -32,6 +33,7 @@ const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: 
 
 export default function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const bottomPad = Math.max(insets.bottom, 8);
 
   return (
@@ -52,7 +54,7 @@ export default function MainTabs() {
           fontWeight: '600',
           marginTop: 2,
         },
-        tabBarLabel: LABELS[route.name] ?? route.name,
+        tabBarLabel: t(TAB_KEYS[route.name] ?? route.name),
         tabBarIcon: ({ focused, color, size }) => {
           const icon = ICONS[route.name];
           if (!icon) return null;

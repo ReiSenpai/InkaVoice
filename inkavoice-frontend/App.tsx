@@ -4,16 +4,19 @@ import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './navigation/AppNavigator';
 import { UserProvider } from './context/UserContext';
 import { AlertProvider } from './context/AlertContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      <UserProvider>
-        <AlertProvider>
-          <AppNavigator />
-        </AlertProvider>
-      </UserProvider>
+      <LanguageProvider>
+        <UserProvider>
+          <AlertProvider>
+            <AppNavigator />
+          </AlertProvider>
+        </UserProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }

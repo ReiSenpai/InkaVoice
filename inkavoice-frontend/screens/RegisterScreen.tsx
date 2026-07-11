@@ -17,6 +17,7 @@ import AuthTopBar from '../components/AuthTopBar';
 import { colors } from '../theme/colors';
 import { useUser } from '../context/UserContext';
 import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 import type { RootStackParamList } from '../navigation/types';
 
 type Language = 'es' | 'en' | 'qu';
@@ -40,11 +41,11 @@ const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const INTERESTS = [
-  { id: 'arqueologia', label: 'Arqueología', icon: '🏛' },
-  { id: 'gastronomia', label: 'Gastronomía', icon: '🍴' },
-  { id: 'naturaleza', label: 'Naturaleza', icon: '🌿' },
-  { id: 'artesania', label: 'Artesanía', icon: '🎨' },
-  { id: 'aventura', label: 'Aventura', icon: '🏔' },
+  { id: 'arqueologia', labelKey: 'register_interest_archaeology' },
+  { id: 'gastronomia', labelKey: 'register_interest_gastronomy' },
+  { id: 'naturaleza', labelKey: 'register_interest_nature' },
+  { id: 'artesania', labelKey: 'register_interest_crafts' },
+  { id: 'aventura', labelKey: 'register_interest_adventure' },
 ];
 
 export default function RegisterScreen() {
@@ -56,7 +57,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [country, setCountry] = useState('');
-  const [language, setLanguage] = useState<Language>('es');
+  const { language, setLanguage, t } = useLanguage();
   const [interests, setInterests] = useState<string[]>(['arqueologia']);
   const [countryModalVisible, setCountryModalVisible] = useState(false);
 
@@ -92,12 +93,12 @@ export default function RegisterScreen() {
           />
 
           <View style={styles.card}>
-            <Text style={styles.title}>Comienza tu viaje</Text>
+            <Text style={styles.title}>{t('register_title')}</Text>
             <Text style={styles.subtitle}>
-              Únete a la plataforma de voz que da vida a la historia del Perú.
+              {t('register_subtitle')}
             </Text>
 
-            <Text style={styles.label}>NOMBRE COMPLETO</Text>
+            <Text style={styles.label}>{t('register_fullname')}</Text>
             <TextInput
               value={fullName}
               onChangeText={setFullName}
@@ -106,7 +107,7 @@ export default function RegisterScreen() {
               style={styles.underlineInput}
             />
 
-            <Text style={[styles.label, styles.fieldGap]}>CORREO ELECTRÓNICO</Text>
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_email')}</Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -117,7 +118,7 @@ export default function RegisterScreen() {
               style={styles.underlineInput}
             />
 
-            <Text style={[styles.label, styles.fieldGap]}>CONTRASEÑA</Text>
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_password')}</Text>
             <View style={styles.passwordRow}>
               <TextInput
                 value={password}
@@ -132,18 +133,18 @@ export default function RegisterScreen() {
               </Pressable>
             </View>
 
-            <Text style={[styles.label, styles.fieldGap]}>PAÍS DE ORIGEN</Text>
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_country')}</Text>
             <Pressable
               style={styles.selectField}
               onPress={() => setCountryModalVisible(true)}
             >
               <Text style={country ? styles.selectValue : styles.selectPlaceholder}>
-                {country || 'Selecciona tu país'}
+                {country || t('register_country_placeholder')}
               </Text>
               <Text style={styles.selectArrow}>▾</Text>
             </Pressable>
 
-            <Text style={[styles.label, styles.fieldGap]}>IDIOMA PREFERIDO</Text>
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_language')}</Text>
             <View style={styles.languageRow}>
               {LANGUAGES.map((item) => {
                 const selected = language === item.id;
@@ -164,7 +165,7 @@ export default function RegisterScreen() {
               })}
             </View>
 
-            <Text style={[styles.label, styles.fieldGap]}>INTERESES TURÍSTICOS</Text>
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_interests')}</Text>
             <View style={styles.chipsRow}>
               {INTERESTS.map((item) => {
                 const selected = interests.includes(item.id);
@@ -174,9 +175,8 @@ export default function RegisterScreen() {
                     style={[styles.chip, selected && styles.chipActive]}
                     onPress={() => toggleInterest(item.id)}
                   >
-                    <Text style={styles.chipIcon}>{item.icon}</Text>
                     <Text style={[styles.chipText, selected && styles.chipTextActive]}>
-                      {item.label}
+                      {t(item.labelKey)}
                     </Text>
                   </Pressable>
                 );
@@ -187,14 +187,14 @@ export default function RegisterScreen() {
               style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
               onPress={handleCreateAccount}
             >
-              <Text style={styles.primaryBtnText}>CREAR CUENTA</Text>
+              <Text style={styles.primaryBtnText}>{t('register_submit')}</Text>
               <Text style={styles.primaryBtnArrow}>→</Text>
             </Pressable>
 
             <Text style={styles.loginText}>
-              ¿Ya tienes una cuenta?{' '}
+              {t('register_have_account')} 
               <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
-                Inicia sesión aquí
+                {t('register_login_link')}
               </Text>
             </Text>
           </View>

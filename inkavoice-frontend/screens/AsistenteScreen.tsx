@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  RecordingPresets,
+  AudioModule,
+} from 'expo-audio';
 import BottomTabBar from '../components/BottomTabBar';
 
 const { width } = Dimensions.get('window');
@@ -25,17 +31,22 @@ const AI_REPLIES: Record<string, string> = {
   'Dónde comer cerca': 'Cerca encontrarás restaurantes con comida andina tradicional y cafés locales. 🍽️',
   'Historia de los Incas': 'El Imperio Inca fue una civilización andina que alcanzó gran expansión entre 1438 y 1533. 📚',
   'Ruta Inca Trail': 'La Ruta Inca conecta varios sitios arqueológicos y termina en Machu Picchu. 🏔️',
-  '¿Qué puedo visitar cerca de Sacsayhuamán?': 'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨',
 };
 
-function WaveBar({ delay, color }: { delay: number; color: string }) {
+function WaveBar({ delay, color, active }: { delay: number; color: string; active: boolean }) {
   const anim = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(anim, { toValue: 1, duration: 500, delay, useNativeDriver: true }),
-      Animated.timing(anim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
-    ])).start();
-  }, []);
+    if (active) {
+      const loop = Animated.loop(Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+      ]));
+      loop.start();
+      return () => loop.stop();
+    } else {
+      anim.setValue(0.3);
+    }
+  }, [active]);
   return <Animated.View style={[styles.waveBar, { backgroundColor: color, transform: [{ scaleY: anim }] }]} />;
 }
 
@@ -44,8 +55,22 @@ export default function AsistenteScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const micPulse = useRef(new Animated.Value(1)).current;
   const [messages, setMessages] = useState<Message[]>(INITIAL);
-  const [isRecording, setIsRecording] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+  // --- Grabación de audio real (expo-audio) ---
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+  const isRecording = recorderState.isRecording;
+
+  useEffect(() => {
+    // Pide permiso de micrófono apenas se monta la pantalla
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        // No bloqueamos la pantalla, solo avisamos cuando intenten grabar
+      }
+    })();
+  }, []);
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
@@ -62,18 +87,91 @@ export default function AsistenteScreen() {
     }, 1000);
   };
 
-  const toggleRecording = () => {
+  // Se llama cuando termina de grabar y ya tenemos el audio listo (uri local del archivo)
+  const handleRecordedAudio = async (uri: string) => {
+    // Mostramos el mensaje del usuario como nota de voz mientras se procesa
+    const placeholderId = Date.now();
+    setMessages(prev => [...prev, { id: placeholderId, sender: 'user', text: '🎤 Nota de voz enviada...' }]);
+    setIsTyping(true);
+    scrollToBottom();
+
+    try {
+      // ============================================================
+      // TODO (backend/IA): reemplazar este bloque por la llamada real.
+      // `uri` es la ruta local del archivo de audio grabado (.m4a / .caf según plataforma).
+      //
+      // Flujo esperado:
+      // 1. Subir/enviar el audio en `uri` al backend (ej. FormData con fetch,
+      //    o convertir a base64 si el backend lo requiere así).
+      // 2. El backend transcribe el audio (speech-to-text) y genera la
+      //    respuesta de la IA (texto, y opcionalmente audio de respuesta).
+      // 3. Reemplazar el mensaje placeholder de abajo con la transcripción real
+      //    del usuario, y agregar la respuesta real de la IA al chat.
+      //
+      // Ejemplo de request (ajustar a la API real):
+      //
+      // const formData = new FormData();
+      // formData.append('audio', {
+      //   uri,
+      //   name: 'nota-de-voz.m4a',
+      //   type: 'audio/m4a',
+      // } as any);
+      //
+      // const response = await fetch('https://TU_BACKEND/api/asistente', {
+      //   method: 'POST',
+      //   body: formData,
+      //   headers: { 'Content-Type': 'multipart/form-data' },
+      // });
+      // const data = await response.json();
+      // const userTranscription = data.transcription;
+      // const aiReplyText = data.reply;
+      // ============================================================
+
+      // --- Simulación temporal mientras se conecta el backend real ---
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      const userTranscription = '¿Qué puedo visitar cerca de Sacsayhuamán?';
+      const aiReplyText = 'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨';
+      // --- Fin de simulación ---
+
+      setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: userTranscription } : m)));
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiReplyText }]);
+    } catch (error) {
+      setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: '🎤 (no se pudo procesar el audio)' } : m)));
+    } finally {
+      setIsTyping(false);
+      scrollToBottom();
+    }
+  };
+
+  const toggleRecording = async () => {
     if (isRecording) {
-      setIsRecording(false);
+      // Detener grabación
       micPulse.stopAnimation();
       micPulse.setValue(1);
-      sendMessage('¿Qué puedo visitar cerca de Sacsayhuamán?');
-    } else {
-      setIsRecording(true);
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      if (uri) {
+        handleRecordedAudio(uri);
+      }
+      return;
+    }
+
+    // Iniciar grabación
+    const permission = await AudioModule.requestRecordingPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu micrófono para grabar tu voz.');
+      return;
+    }
+
+    try {
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
       Animated.loop(Animated.sequence([
         Animated.timing(micPulse, { toValue: 1.15, duration: 500, useNativeDriver: true }),
         Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])).start();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo iniciar la grabación.');
     }
   };
 
@@ -125,7 +223,9 @@ export default function AsistenteScreen() {
       </View>
 
       <View style={styles.voiceBar}>
-        <View style={styles.waveContainer}>{WAVE_DELAYS.map((d, i) => <WaveBar key={i} delay={d} color={C.greenM} />)}</View>
+        <View style={styles.waveContainer}>
+          {WAVE_DELAYS.map((d, i) => <WaveBar key={i} delay={d} color={C.greenM} active={isRecording} />)}
+        </View>
         <Animated.View style={{ transform: [{ scale: micPulse }] }}>
           <TouchableOpacity style={[styles.micBtn, isRecording && styles.micBtnActive]} onPress={toggleRecording}>
             <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color={C.white} />

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAudioGuide } from '../context/AudioGuideContext';
 import BottomTabBar from '../components/BottomTabBar';
 
 const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
@@ -58,6 +59,11 @@ export default function ResultadoScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const { isActive: isAudioActive } = useAudioGuide();
+
+  // Si el mini-reproductor está visible abajo, subimos el botón del micrófono
+  // para que no se solapen.
+  const micBottom = isAudioActive ? 96 + 64 : 96;
   const [language, setLanguage] = useState<Lang>('Español');
   const [translating, setTranslating] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
@@ -103,7 +109,7 @@ export default function ResultadoScreen() {
             </View>
           )}
 
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Audioguia', { nombre: content.title, region: content.region })}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Audioguia', { nombre: content.title, region: content.region, photoUri })}>
             <Ionicons name="volume-medium" size={20} color={C.white} />
             <Text style={styles.primaryButtonText}>{content.btnListen}</Text>
           </TouchableOpacity>
@@ -140,7 +146,7 @@ export default function ResultadoScreen() {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.micButton} onPress={() => navigation.navigate('Asistente')}>
+      <TouchableOpacity style={[styles.micButton, { bottom: micBottom }]} onPress={() => navigation.navigate('Asistente')}>
         <Ionicons name="mic" size={28} color={C.white} />
       </TouchableOpacity>
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAudioGuide } from '../context/AudioGuideContext';
 import BottomTabBar from '../components/BottomTabBar';
 
 const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
@@ -14,27 +15,39 @@ const CHAPTER_TEXTS: Record<string, { title: string; desc: string }> = {
   QUECHUA: { title: 'Inti Wasi Hatun Sumaq', desc: 'Kaypi rikusunki imaynatas kay hatun rumikuna, wakin pachaq tunilada nisqamanta astawan, chay chiqap llank\'asqa kasqanta. Mana huk qullqi qullqi chawpipi yaykupuwaqchu.' },
 };
 
+// Imagen de respaldo si se llega a esta pantalla sin foto (navegación directa, testing, etc.)
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=500';
+
 export default function AudioguiaScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const params = route.params || {};
   const insets = useSafeAreaInsets();
 
-  const [isPlaying, setIsPlaying] = useState(false);
   const [language, setLanguage] = useState<'ESPAÑOL' | 'ENGLISH' | 'QUECHUA'>('ESPAÑOL');
-  const [progress, setProgress] = useState(30);
   const [translating, setTranslating] = useState(false);
   const [showTranslated, setShowTranslated] = useState(false);
 
   const chapter = CHAPTER_TEXTS[language];
+  const photoUri: string | undefined = params.photoUri;
+  const coverImageSource = photoUri ? { uri: photoUri } : { uri: FALLBACK_IMAGE };
 
+  // --- Reproductor global (sobrevive a salir de esta pantalla) ---
+  const { isActive, isPlaying, currentTime, duration, togglePlay, skip, loadGuide, stopAndClear } = useAudioGuide();
+
+  // Al entrar a la pantalla, "carga" esta guía en el reproductor global
+  // (si ya estaba sonando la misma, simplemente sigue donde iba).
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isPlaying) {
-      interval = setInterval(() => setProgress(prev => (prev < 100 ? prev + 1 : 0)), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    loadGuide({
+      title: chapter.title,
+      region: params.region || 'Cusco, Capital Imperial',
+      photoUri,
+      nombre: params.nombre,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const handleTranslate = (lang: 'ESPAÑOL' | 'ENGLISH' | 'QUECHUA') => {
     if (lang === language) return;
@@ -44,22 +57,69 @@ export default function AudioguiaScreen() {
       setLanguage(lang);
       setTranslating(false);
       setShowTranslated(true);
+      // TODO (backend/IA): aquí también correspondería cambiar el audio
+      // que se reproduce por la versión en el nuevo idioma cuando esté disponible.
     }, 900);
   };
 
-  const formatTime = (pct: number) => {
-    const total = 765;
-    const current = Math.floor((pct / 100) * total);
-    const m = Math.floor(current / 60).toString().padStart(2, '0');
-    const s = (current % 60).toString().padStart(2, '0');
-    return `${m}:${s} / 12:45`;
+  // Si el audio fue detenido (ej. tocaste la "X" del mini-reproductor),
+  // el botón de play debe volver a cargarlo en vez de solo pausar/reanudar.
+  const handlePlayPress = () => {
+    if (!isActive) {
+      loadGuide({
+        title: chapter.title,
+        region: params.region || 'Cusco, Capital Imperial',
+        photoUri,
+        nombre: params.nombre,
+      });
+      return;
+    }
+    togglePlay();
+  };
+
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  // Al salir de la pantalla (botón atrás propio), si el audio está sonando
+  // preguntamos si seguir escuchando en segundo plano o detenerlo.
+  const handleBackPress = () => {
+    const goBack = () => navigation.navigate('Resultado', photoUri ? { photoUri } : undefined);
+
+    if (!isPlaying) {
+      goBack();
+      return;
+    }
+
+    Alert.alert(
+      'Audioguía en reproducción',
+      '¿Qué quieres hacer con el audio?',
+      [
+        {
+          text: 'Seguir escuchando',
+          onPress: () => goBack(), // el audio sigue sonando, el mini-reproductor lo muestra
+        },
+        {
+          text: 'Detener',
+          style: 'destructive',
+          onPress: () => {
+            stopAndClear();
+            goBack();
+          },
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ],
+    );
   };
 
   return (
     <View style={{ flex: 1 }}>
     <ScrollView style={[styles.container, { paddingTop: insets.top + 12 }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Resultado')}>
+        <TouchableOpacity onPress={handleBackPress}>
           <Ionicons name="arrow-back" size={22} color={C.green} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>InkaVoice</Text>
@@ -71,13 +131,15 @@ export default function AudioguiaScreen() {
       <View style={styles.circleContainer}>
         <View style={styles.circleOuter}>
           <View style={styles.imageWrapper}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=500' }} style={styles.coverImage} />
+            <Image source={coverImageSource} style={styles.coverImage} />
           </View>
         </View>
         <View style={[styles.arcDecor, { borderTopColor: C.goldL, borderRightColor: C.goldL }]} />
       </View>
 
-      <View style={styles.timeBadge}><Text style={styles.timeText}>{formatTime(progress)}</Text></View>
+      <View style={styles.timeBadge}>
+        <Text style={styles.timeText}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
+      </View>
 
       <View style={styles.languageContainer}>
         {(['ESPAÑOL', 'ENGLISH', 'QUECHUA'] as const).map(lang => (
@@ -88,18 +150,18 @@ export default function AudioguiaScreen() {
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={() => setProgress(p => Math.max(0, p - 10))}>
+        <TouchableOpacity onPress={() => skip(-10)}>
           <Ionicons name="play-skip-back" size={28} color={C.gold} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.playButton} onPress={() => setIsPlaying(!isPlaying)}>
+        <TouchableOpacity style={styles.playButton} onPress={handlePlayPress}>
           <Ionicons name={isPlaying ? 'pause' : 'play'} size={36} color={C.white} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setProgress(p => Math.min(100, p + 10))}>
+        <TouchableOpacity onPress={() => skip(10)}>
           <Ionicons name="play-skip-forward" size={28} color={C.gold} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View>
+      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progressPct}%` }]} /></View>
 
       <View style={styles.chapterCard}>
         <View style={styles.chapterHeader}>
@@ -124,8 +186,8 @@ export default function AudioguiaScreen() {
           </>
         )}
         <View style={styles.chapterProgressTrack}>
-          <View style={[styles.chapterProgressFill, { width: `${progress}%` }]} />
-          <View style={[styles.chapterProgressDot, { left: `${progress}%` }]} />
+          <View style={[styles.chapterProgressFill, { width: `${progressPct}%` }]} />
+          <View style={[styles.chapterProgressDot, { left: `${progressPct}%` }]} />
         </View>
       </View>
 

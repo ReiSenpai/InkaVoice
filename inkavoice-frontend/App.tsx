@@ -5,6 +5,7 @@ import AppNavigator from './navigation/AppNavigator';
 import { UserProvider } from './context/UserContext';
 import { AlertProvider } from './context/AlertContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { AudioGuideProvider } from './context/AudioGuideContext';
 
 export default function App() {
   return (
@@ -13,7 +14,9 @@ export default function App() {
       <LanguageProvider>
         <UserProvider>
           <AlertProvider>
-            <AppNavigator />
+            <AudioGuideProvider>
+              <AppNavigator />
+            </AudioGuideProvider>
           </AlertProvider>
         </UserProvider>
       </LanguageProvider>

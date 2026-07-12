@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioGuide } from '../context/AudioGuideContext';
 import BottomTabBar from '../components/BottomTabBar';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
 
@@ -20,6 +22,8 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1587595431973-160d0d94
 
 export default function AudioguiaScreen() {
   const navigation = useNavigation<any>();
+  const { alert } = useAlert();
+  const { t } = useLanguage();
   const route = useRoute<any>();
   const params = route.params || {};
   const insets = useSafeAreaInsets();
@@ -94,23 +98,23 @@ export default function AudioguiaScreen() {
       return;
     }
 
-    Alert.alert(
-      'Audioguía en reproducción',
-      '¿Qué quieres hacer con el audio?',
+    alert(
+      t('alert_audio_playing_title'),
+      t('alert_audio_playing_message'),
       [
         {
-          text: 'Seguir escuchando',
-          onPress: () => goBack(), // el audio sigue sonando, el mini-reproductor lo muestra
+          text: t('alert_keep_listening'),
+          onPress: () => goBack(),
         },
         {
-          text: 'Detener',
+          text: t('alert_stop'),
           style: 'destructive',
           onPress: () => {
             stopAndClear();
             goBack();
           },
         },
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('alert_cancel'), style: 'cancel' },
       ],
     );
   };
@@ -126,7 +130,7 @@ export default function AudioguiaScreen() {
         <TouchableOpacity><Ionicons name="ellipsis-vertical" size={22} color={C.green} /></TouchableOpacity>
       </View>
 
-      <Text style={styles.location}>{params.region || 'Cusco, Capital Imperial'} · HIGHLANDS REGION</Text>
+      <Text style={styles.location}>{params.region || t('audio_default_location')} · {t('audio_region_highlands')}</Text>
 
       <View style={styles.circleContainer}>
         <View style={styles.circleOuter}>
@@ -165,20 +169,20 @@ export default function AudioguiaScreen() {
 
       <View style={styles.chapterCard}>
         <View style={styles.chapterHeader}>
-          <Text style={styles.chapterLabel}>CAPÍTULO ACTUAL</Text>
+          <Text style={styles.chapterLabel}>{t('audio_chapter_current')}</Text>
           <Ionicons name="headset-outline" size={20} color={C.gold} />
         </View>
         {translating ? (
           <View style={styles.translatingRow}>
             <ActivityIndicator color={C.gold} />
-            <Text style={styles.translatingText}>Traduciendo al {language}...</Text>
+            <Text style={styles.translatingText}>{t('audio_translating_prefix')} {language}...</Text>
           </View>
         ) : (
           <>
             {showTranslated && (
               <View style={styles.translatedBadge}>
                 <Ionicons name="language-outline" size={13} color={C.green} />
-                <Text style={styles.translatedBadgeText}>Traducido · {language}</Text>
+                <Text style={styles.translatedBadgeText}>{t('audio_translated_prefix')} {language}</Text>
               </View>
             )}
             <Text style={styles.chapterTitle}>{chapter.title}</Text>

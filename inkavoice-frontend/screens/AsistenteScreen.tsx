@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,8 @@ import {
   AudioModule,
 } from 'expo-audio';
 import BottomTabBar from '../components/BottomTabBar';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -52,6 +54,8 @@ function WaveBar({ delay, color, active }: { delay: number; color: string; activ
 
 export default function AsistenteScreen() {
   const navigation = useNavigation<any>();
+  const { alert } = useAlert();
+  const { t } = useLanguage();
   const scrollRef = useRef<ScrollView>(null);
   const micPulse = useRef(new Animated.Value(1)).current;
   const [messages, setMessages] = useState<Message[]>(INITIAL);
@@ -159,7 +163,7 @@ export default function AsistenteScreen() {
     // Iniciar grabación
     const permission = await AudioModule.requestRecordingPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu micrófono para grabar tu voz.');
+      alert(t('alert_mic_permission_title'), t('alert_mic_permission_message'));
       return;
     }
 
@@ -171,7 +175,7 @@ export default function AsistenteScreen() {
         Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])).start();
     } catch (e) {
-      Alert.alert('Error', 'No se pudo iniciar la grabación.');
+      alert(t('alert_recording_error_title'), t('alert_recording_error_message'));
     }
   };
 
@@ -190,7 +194,7 @@ export default function AsistenteScreen() {
         </View>
       </View>
 
-      <View style={styles.hero}><Text style={styles.heroTitle}>Tu Guía Personal de IA</Text></View>
+      <View style={styles.hero}><Text style={styles.heroTitle}>{t('assistant_hero_title')}</Text></View>
 
       <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent}>
         {messages.map(msg => (

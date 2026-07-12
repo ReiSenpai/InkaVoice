@@ -1,16 +1,20 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, Dimensions, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 const C = { dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.beige, gray: colors.gray400 };
 
 export default function CameraScreen() {
   const navigation = useNavigation<any>();
+  const { alert } = useAlert();
+  const { t } = useLanguage();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [scanning, setScanning] = useState(false);
@@ -49,7 +53,7 @@ export default function CameraScreen() {
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        Alert.alert('Permiso necesario', 'Necesitamos acceso a tu cámara para escanear un sitio.');
+        alert(t('alert_mic_permission_title'), t('alert_camera_permission_message'));
         return;
       }
     }
@@ -71,7 +75,7 @@ export default function CameraScreen() {
   const pickFromGallery = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para elegir una foto.');
+      alert(t('alert_mic_permission_title'), t('alert_gallery_permission_message'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({

@@ -5,21 +5,22 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const STATS = [
-  { id: 'sitios', icon: 'flag-outline', value: 24, label: 'SITIOS VISITADOS' },
-  { id: 'km', icon: 'walk-outline', value: '142', label: 'KM RECORRIDOS' },
+  { id: 'sitios', icon: 'flag-outline', value: 24, labelKey: 'history_stat_sites' },
+  { id: 'km', icon: 'walk-outline', value: '142', labelKey: 'history_stat_km' },
 ];
 
 const ACTIVE_ROUTE = {
   title: 'Camino Inca Real',
-  label: 'RUTA ACTIVA',
+  labelKey: 'history_active_route_label',
 };
 
 const FAVORITES = [
-  { id: '1', title: 'Machu Picchu', region: 'SIERRA', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=600&q=80' },
-  { id: '2', title: 'Reserva Nacional', region: 'SELVA', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80' },
-  { id: '3', title: 'Líneas de Nazca', region: 'COSTA', image: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=600&q=80' },
+  { id: '1', title: 'Machu Picchu', regionKey: 'region_sierra_upper', image: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=600&q=80' },
+  { id: '2', title: 'Reserva Nacional', regionKey: 'region_selva_upper', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80' },
+  { id: '3', title: 'Líneas de Nazca', regionKey: 'region_costa_upper', image: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=600&q=80' },
 ];
 
 type TimelineItem = {
@@ -63,6 +64,7 @@ export default function HistoryScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { alert } = useAlert();
+  const { t } = useLanguage();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
@@ -73,14 +75,14 @@ export default function HistoryScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.eyebrow}>TU LEGADO DIGITAL</Text>
-        <Text style={styles.title}>Historial de Exploración</Text>
+        <Text style={styles.eyebrow}>{t('history_eyebrow')}</Text>
+        <Text style={styles.title}>{t('history_title')}</Text>
 
         <View style={styles.statsRow}>
           {STATS.map(stat => (
             <View key={stat.id} style={styles.statCard}>
               <Ionicons name={stat.icon as any} size={18} color={colors.green} />
-              <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={styles.statLabel}>{t(stat.labelKey)}</Text>
               <Text style={styles.statValue}>{stat.value}</Text>
             </View>
           ))}
@@ -90,18 +92,18 @@ export default function HistoryScreen() {
           style={styles.activeRouteCard}
           onPress={() => navigation.navigate('Routes')}
         >
-          <Text style={styles.activeRouteLabel}>{ACTIVE_ROUTE.label}</Text>
+          <Text style={styles.activeRouteLabel}>{t(ACTIVE_ROUTE.labelKey)}</Text>
           <Text style={styles.activeRouteTitle}>{ACTIVE_ROUTE.title}</Text>
           <View style={styles.activeRouteLink}>
             <Ionicons name="map-outline" size={14} color={colors.white} />
-            <Text style={styles.activeRouteLinkText}>Ver progreso en mapa</Text>
+            <Text style={styles.activeRouteLinkText}>{t('history_view_progress')}</Text>
           </View>
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Favoritos</Text>
-          <TouchableOpacity onPress={() => alert('Favoritos', `Tienes ${FAVORITES.length} sitios marcados como favoritos.`)}>
-            <Text style={styles.sectionLink}>Ver todos</Text>
+          <Text style={styles.sectionTitle}>{t('history_favorites_title')}</Text>
+          <TouchableOpacity onPress={() => alert(t('alert_favorites_title'), t('alert_favorites_message').replace('{count}', String(FAVORITES.length)))}>
+            <Text style={styles.sectionLink}>{t('history_view_all')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -110,7 +112,7 @@ export default function HistoryScreen() {
             <TouchableOpacity key={fav.id} style={styles.favoriteCard} onPress={() => navigation.navigate('Resultado')}>
               <Image source={{ uri: fav.image }} style={styles.favoriteImage} />
               <View style={styles.favoriteRegionBadge}>
-                <Text style={styles.favoriteRegionText}>{fav.region}</Text>
+                <Text style={styles.favoriteRegionText}>{t(fav.regionKey)}</Text>
               </View>
               <View style={styles.favoriteOverlay}>
                 <Text style={styles.favoriteTitle}>{fav.title}</Text>
@@ -120,7 +122,7 @@ export default function HistoryScreen() {
         </ScrollView>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recientes</Text>
+          <Text style={styles.sectionTitle}>{t('history_recent_title')}</Text>
         </View>
 
         <View style={styles.timeline}>
@@ -153,7 +155,7 @@ export default function HistoryScreen() {
                       <Text style={styles.timelineStatusText}>{item.status.label}</Text>
                     </View>
                     <TouchableOpacity style={styles.timelineMapBtn} onPress={() => navigation.navigate('Discover')}>
-                      <Text style={styles.timelineMapBtnText}>VER MAPA</Text>
+                      <Text style={styles.timelineMapBtnText}>{t('history_view_map')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}

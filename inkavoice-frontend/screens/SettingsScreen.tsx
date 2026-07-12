@@ -14,14 +14,14 @@ type SettingItem = {
   icon: keyof typeof Ionicons.glyphMap;
   iconBg: string;
   iconColor: string;
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
 };
 
 const ITEMS: SettingItem[] = [
-  { id: 'sos', icon: 'warning', iconBg: '#FDE8E8', iconColor: '#D64545', title: 'Emergencia SOS', subtitle: 'Asistencia inmediata y contactos de emergencia' },
-  { id: 'idioma', icon: 'language', iconBg: '#E3F6EC', iconColor: '#1E8A5F', title: 'Idioma y Voz', subtitle: 'Español, Narración: Quechua-Accented' },
-  { id: 'descargas', icon: 'download-outline', iconBg: '#EDEDED', iconColor: '#555555', title: 'Gestión de Descargas', subtitle: '1.2 GB utilizados · Solo por Wi-Fi' },
+  { id: 'sos', icon: 'warning', iconBg: '#FDE8E8', iconColor: '#D64545', titleKey: 'settings_sos_title', subtitleKey: 'settings_sos_subtitle' },
+  { id: 'idioma', icon: 'language', iconBg: '#E3F6EC', iconColor: '#1E8A5F', titleKey: 'settings_lang_title', subtitleKey: 'settings_lang_subtitle' },
+  { id: 'descargas', icon: 'download-outline', iconBg: '#EDEDED', iconColor: '#555555', titleKey: 'settings_downloads_title', subtitleKey: 'settings_downloads_subtitle' },
 ];
 
 export default function SettingsScreen() {
@@ -37,14 +37,14 @@ export default function SettingsScreen() {
       setLangModalVisible(true);
       return;
     }
-    alert(item.title, item.subtitle);
+    alert(t(item.titleKey), t(item.subtitleKey));
   };
 
   const handleLogout = () => {
-    alert('Cerrar sesión', '¿Seguro que quieres cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
+    alert(t('alert_logout_title'), t('alert_logout_message'), [
+      { text: t('alert_cancel'), style: 'cancel' },
       {
-        text: 'Cerrar sesión',
+        text: t('alert_logout_title'),
         style: 'destructive',
         onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] }),
       },
@@ -57,14 +57,14 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={colors.green} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ajustes</Text>
+        <Text style={styles.headerTitle}>{t('settings_title')}</Text>
         <View style={{ width: 22 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.eyebrow}>CONFIGURACIÓN AVANZADA</Text>
+        <Text style={styles.eyebrow}>{t('settings_eyebrow')}</Text>
         <Text style={styles.intro}>
-          Personaliza tu experiencia de InkaVoice para explorar el legado del Perú a tu ritmo.
+          {t('settings_intro')}
         </Text>
 
         <View style={styles.card}>
@@ -78,8 +78,8 @@ export default function SettingsScreen() {
                 <Ionicons name={item.icon} size={20} color={item.iconColor} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>{item.title}</Text>
-                <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+                <Text style={styles.rowTitle}>{t(item.titleKey)}</Text>
+                <Text style={styles.rowSubtitle}>{t(item.subtitleKey)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.gray400} />
             </TouchableOpacity>
@@ -90,14 +90,14 @@ export default function SettingsScreen() {
               <Ionicons name="moon" size={20} color="#555" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Modo Oscuro</Text>
-              <Text style={styles.rowSubtitle}>Optimizar para ambientes nocturnos</Text>
+              <Text style={styles.rowTitle}>{t('settings_dark_title')}</Text>
+              <Text style={styles.rowSubtitle}>{t('settings_dark_subtitle')}</Text>
             </View>
             <Switch
               value={darkMode}
               onValueChange={(value) => {
                 setDarkMode(value);
-                alert('Modo Oscuro', value ? 'Activado (vista previa, aún no aplicado a toda la app).' : 'Desactivado.');
+                alert(t('alert_dark_mode_title'), value ? t('alert_dark_mode_on') : t('alert_dark_mode_off'));
               }}
               trackColor={{ false: colors.gray200, true: colors.green }}
               thumbColor={colors.white}
@@ -109,8 +109,8 @@ export default function SettingsScreen() {
               <Ionicons name="log-out-outline" size={20} color="#D64545" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: '#D64545' }]}>Cerrar Sesión</Text>
-              <Text style={styles.rowSubtitle}>Conectado como Visitante Cusco</Text>
+              <Text style={[styles.rowTitle, { color: '#D64545' }]}>{t('settings_logout_title')}</Text>
+              <Text style={styles.rowSubtitle}>{t('settings_logout_subtitle')}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -118,7 +118,7 @@ export default function SettingsScreen() {
         <View style={styles.footer}>
           <Ionicons name="leaf-outline" size={40} color={colors.gray400} />
           <Text style={styles.footerVersion}>INKAVOICE V2.4.0</Text>
-          <Text style={styles.footerTagline}>Hecho con respeto por el legado Peruano</Text>
+          <Text style={styles.footerTagline}>{t('settings_footer_tagline')}</Text>
         </View>
       </ScrollView>
 
@@ -145,7 +145,7 @@ export default function SettingsScreen() {
               );
             })}
             <TouchableOpacity style={styles.langModalClose} onPress={() => setLangModalVisible(false)}>
-              <Text style={styles.langModalCloseText}>Cancelar</Text>
+              <Text style={styles.langModalCloseText}>{t("alert_cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>

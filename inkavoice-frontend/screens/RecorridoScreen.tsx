@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getInitials } from '../utils/initials';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,6 +20,7 @@ const ROUTES = [
 export default function RecorridoScreen() {
   const navigation = useNavigation<any>();
   const { photoUri, name } = useUser();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('Todas');
   const [search, setSearch] = useState('');
@@ -40,29 +42,34 @@ export default function RecorridoScreen() {
           {photoUri ? (<Image source={{ uri: photoUri }} style={styles.avatar} />) : (<View style={styles.avatarInitialsWrap}><Text style={styles.avatarInitialsText}>{getInitials(name)}</Text></View>)}
         </View>
 
-        <Text style={styles.title}>Planifica tu Expedición</Text>
+        <Text style={styles.title}>{t('routes_title')}</Text>
 
         <View style={styles.search}>
           <Ionicons name="search" size={20} color="#777" />
-          <TextInput value={search} onChangeText={setSearch} placeholder="Busca tu próxima ruta..." placeholderTextColor="#999" style={styles.input} />
+          <TextInput value={search} onChangeText={setSearch} placeholder={t("routes_search_placeholder")} placeholderTextColor="#999" style={styles.input} />
         </View>
 
         <TouchableOpacity style={styles.filterBtn}>
           <Ionicons name="options" size={18} color="#FFF" />
-          <Text style={styles.filterText}>Filtros</Text>
+          <Text style={styles.filterText}>{t('routes_filters')}</Text>
         </TouchableOpacity>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingTop: 18 }}>
-          {['Todas', 'Costa', 'Sierra', 'Selva'].map(v => (
-            <TouchableOpacity key={v} style={[styles.tab, filter === v && styles.tabActive]} onPress={() => setFilter(v)}>
-              <Text style={[styles.tabText, filter === v && { color: C.green }]}>{v}</Text>
+          {[
+            { id: 'Todas', labelKey: 'filter_all' },
+            { id: 'Costa', labelKey: 'category_coast' },
+            { id: 'Sierra', labelKey: 'category_highlands' },
+            { id: 'Selva', labelKey: 'category_jungle' },
+          ].map(v => (
+            <TouchableOpacity key={v.id} style={[styles.tab, filter === v.id && styles.tabActive]} onPress={() => setFilter(v.id)}>
+              <Text style={[styles.tabText, filter === v.id && { color: C.green }]}>{t(v.labelKey)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.section}>Rutas Cercanas</Text>
-          <TouchableOpacity><Text style={styles.link}>Ver todas</Text></TouchableOpacity>
+          <Text style={styles.section}>{t('routes_nearby')}</Text>
+          <TouchableOpacity><Text style={styles.link}>{t('routes_view_all')}</Text></TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -74,16 +81,16 @@ export default function RecorridoScreen() {
                 <Text style={styles.cardTitle}>{r.title}</Text>
                 <Text style={styles.cardSub}>{r.subtitle}</Text>
                 <Text style={styles.meta}>{r.duration} · {r.level}</Text>
-                <TouchableOpacity style={styles.detailBtn}><Text>Ver Detalle</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.detailBtn}><Text>{t('routes_view_detail')}</Text></TouchableOpacity>
               </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <Text style={[styles.section, { marginTop: 30 }]}>Nuevas Experiencias</Text>
+        <Text style={[styles.section, { marginTop: 30 }]}>{t('routes_new_experiences')}</Text>
         <View style={styles.experience}>
-          <Text style={styles.expTitle}>Explora rutas con IA</Text>
-          <Text style={styles.expSub}>Recorridos personalizados</Text>
+          <Text style={styles.expTitle}>{t('routes_ai_explore')}</Text>
+          <Text style={styles.expSub}>{t('routes_personalized')}</Text>
         </View>
       </ScrollView>
 

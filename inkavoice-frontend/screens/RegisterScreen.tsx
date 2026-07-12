@@ -71,7 +71,7 @@ export default function RegisterScreen() {
 
   const handleCreateAccount = () => {
     setName(fullName.trim() || 'Usuario');
-    alert('Cuenta creada', 'Tu cuenta se creó correctamente. Ahora inicia sesión para continuar.', [
+    alert(t('alert_account_created_title'), t('alert_account_created_message'), [
       { text: 'OK', onPress: () => navigation.replace('Login') },
     ]);
   };

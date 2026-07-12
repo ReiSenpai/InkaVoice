@@ -5,6 +5,7 @@ import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioGuide } from '../context/AudioGuideContext';
+import { useLanguage } from '../context/LanguageContext';
 import BottomTabBar from '../components/BottomTabBar';
 
 const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
@@ -59,6 +60,7 @@ export default function ResultadoScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const { isActive: isAudioActive } = useAudioGuide();
 
   // Si el mini-reproductor está visible abajo, subimos el botón del micrófono
@@ -93,7 +95,7 @@ export default function ResultadoScreen() {
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={24} color={C.white} /></TouchableOpacity>
         </View>
         <View style={styles.recognitionBadge}>
-          <Text style={styles.recognitionText}>● RECONOCIMIENTO 98%</Text>
+          <Text style={styles.recognitionText}>{t('result_recognition')}</Text>
         </View>
       </ImageBackground>
 
@@ -105,7 +107,7 @@ export default function ResultadoScreen() {
           {language !== 'Español' && (
             <View style={styles.activeLangBadge}>
               <Ionicons name="language-outline" size={13} color={C.green} />
-              <Text style={styles.activeLangText}>Traducido · {language}</Text>
+              <Text style={styles.activeLangText}>{t('result_translated_prefix')} {language}</Text>
             </View>
           )}
 
@@ -125,7 +127,7 @@ export default function ResultadoScreen() {
           {translating ? (
             <View style={styles.translatingBox}>
               <ActivityIndicator color={C.gold} size="large" />
-              <Text style={styles.translatingText}>Traduciendo al {language}...</Text>
+              <Text style={styles.translatingText}>{t('result_translating_prefix')} {language}...</Text>
             </View>
           ) : (
             <>
@@ -154,8 +156,8 @@ export default function ResultadoScreen() {
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowLangModal(false)}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Selecciona el idioma</Text>
-            <Text style={styles.modalSub}>El contenido se traducirá automáticamente</Text>
+            <Text style={styles.modalTitle}>{t('result_select_language')}</Text>
+            <Text style={styles.modalSub}>{t('result_select_language_sub')}</Text>
             {LANGUAGES.map(lang => (
               <TouchableOpacity key={lang} style={[styles.langOption, language === lang && styles.langOptionActive]} onPress={() => handleSelectLang(lang)}>
                 <View style={styles.langOptionLeft}>
@@ -169,7 +171,7 @@ export default function ResultadoScreen() {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.modalClose} onPress={() => setShowLangModal(false)}>
-              <Text style={styles.modalCloseText}>Cancelar</Text>
+              <Text style={styles.modalCloseText}>{t('alert_cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

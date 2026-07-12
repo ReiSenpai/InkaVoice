@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 type AuthTopBarProps = {
   actionLabel: string;
@@ -7,24 +7,8 @@ type AuthTopBarProps = {
 };
 
 export default function AuthTopBar({ actionLabel, onAction }: AuthTopBarProps) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.brandRow}>
-        <View style={styles.logoBox}>
-          <View style={[styles.bar, styles.bar1]} />
-          <View style={[styles.bar, styles.bar2]} />
-          <View style={[styles.bar, styles.bar3]} />
-        </View>
-        <Text style={styles.brandName}>InkaVoice</Text>
-      </View>
-      <Text style={styles.action} onPress={onAction}>
-        {actionLabel}
-      </Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -65,3 +49,22 @@ const styles = StyleSheet.create({
     color: colors.teal,
   },
 });
+
+  return (
+    <View style={styles.row}>
+      <View style={styles.brandRow}>
+        <View style={styles.logoBox}>
+          <View style={[styles.bar, styles.bar1]} />
+          <View style={[styles.bar, styles.bar2]} />
+          <View style={[styles.bar, styles.bar3]} />
+        </View>
+        <Text style={styles.brandName}>InkaVoice</Text>
+      </View>
+      <Text style={styles.action} onPress={onAction}>
+        {actionLabel}
+      </Text>
+    </View>
+  );
+}
+
+

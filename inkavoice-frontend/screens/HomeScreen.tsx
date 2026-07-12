@@ -9,9 +9,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
 const TAB_BAR_HEIGHT = 72;
 
@@ -53,7 +53,7 @@ const AI_PICKS = [
     match: '98% Match',
     description: 'Explora la ingeniería lítica de los muros ciclópeos de Cusco.',
     icon: '🏛',
-    bg: colors.beige,
+    bgKey: 'beige' as const,
   },
   {
     id: '2',
@@ -61,7 +61,7 @@ const AI_PICKS = [
     match: '85% Match',
     description: 'El oráculo más importante de la costa central peruana.',
     icon: '🧭',
-    bg: colors.white,
+    bgKey: 'white' as const,
   },
 ];
 
@@ -73,145 +73,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const fabBottom = TAB_BAR_HEIGHT + insets.bottom + 12;
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 },
-        ]}
-      >
-        <View style={styles.topBar}>
-          <Text style={styles.topIcon}>🔍</Text>
-          <Text style={styles.topTitle}>InkaVoice</Text>
-          <Pressable onPress={() => navigation.navigate('Settings')}><Text style={styles.topIcon}>⚙</Text></Pressable>
-        </View>
+  const { colors } = useTheme();
 
-        <Text style={styles.greeting}>{t('home_greeting')}</Text>
-        <Text style={styles.greetingSub}>
-          {t('home_greeting_sub')}
-        </Text>
-
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🌐</Text>
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder={t("home_search_placeholder")}
-            placeholderTextColor={colors.gray400}
-            style={styles.searchInput}
-          />
-          <Text style={styles.sparkle}>✨</Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesRow}
-        >
-          {CATEGORIES.map((item) => {
-            const active = activeCategory === item.id;
-            return (
-              <Pressable
-                key={item.id}
-                style={[styles.categoryPill, active && styles.categoryPillActive]}
-                onPress={() => setActiveCategory(item.id)}
-              >
-                <Text style={[styles.categoryText, active && styles.categoryTextActive]}>
-                  {t(item.labelKey)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionLabel}>{t('home_recommended_label')}</Text>
-            <Text style={styles.sectionTitle}>{t('home_recommended_title')}</Text>
-          </View>
-          <Text style={styles.sectionLink}>{t('home_view_all')}</Text>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cardsRow}
-        >
-          {RECOMMENDED.map((item) => (
-            <View key={item.id} style={styles.discoverCard}>
-              <ImageBackground
-                source={{ uri: item.image }}
-                style={[styles.discoverImage, { backgroundColor: item.fallbackColor }]}
-                imageStyle={styles.discoverImageInner}
-              >
-                <View style={styles.regionBadge}>
-                  <Text style={styles.regionBadgeText}>{item.region}</Text>
-                </View>
-                <View style={styles.discoverOverlay}>
-                  <Text style={styles.discoverTitle}>{item.title}</Text>
-                </View>
-              </ImageBackground>
-            </View>
-          ))}
-        </ScrollView>
-
-        <View style={styles.aiHeader}>
-          <Text style={styles.aiIcon}>✨</Text>
-          <Text style={styles.aiTitle}>{t('home_ai_title')}</Text>
-        </View>
-
-        <View style={styles.featuredCard}>
-          <ImageBackground
-            source={{
-              uri: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=800&q=80',
-            }}
-            style={styles.featuredImage}
-            imageStyle={styles.featuredImageInner}
-          >
-            <View style={styles.featuredImageOverlay} />
-          </ImageBackground>
-          <View style={styles.featuredBody}>
-            <Text style={styles.featuredLabel}>{t('home_featured_label')}</Text>
-            <Text style={styles.featuredTitle}>{t('home_featured_title')}</Text>
-            <Text style={styles.featuredDesc}>
-              {t('home_featured_desc')}
-            </Text>
-            <Pressable style={({ pressed }) => [styles.featuredBtn, pressed && styles.pressed]} onPress={() => navigation.navigate('ARView')}>
-              <Text style={styles.featuredBtnText}>{t('home_featured_btn')}</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {AI_PICKS.map((item) => (
-          <View key={item.id} style={[styles.pickCard, { backgroundColor: item.bg }]}>
-            <View style={styles.pickTop}>
-              <Text style={styles.pickIcon}>{item.icon}</Text>
-              <Text style={styles.pickMatch}>{item.match}</Text>
-            </View>
-            <Text style={styles.pickTitle}>{item.title}</Text>
-            <Text style={styles.pickDesc}>{item.description}</Text>
-            <Pressable style={styles.playBtn} onPress={() => navigation.navigate('Resultado')}>
-              <Text style={styles.playBtnText}>▶</Text>
-            </Pressable>
-          </View>
-        ))}
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-
-      <Pressable
-        style={({ pressed }) => [styles.fab, { bottom: fabBottom }, pressed && styles.pressed]}
-        onPress={() => navigation.navigate('Asistente')}
-      >
-        <Text style={styles.fabIcon}>🎤</Text>
-      </Pressable>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingHorizontal: 20, paddingTop: 4 },
   topBar: {
@@ -403,3 +267,144 @@ const styles = StyleSheet.create({
   bottomSpacer: { height: 8 },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });
+
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24 },
+        ]}
+      >
+        <View style={styles.topBar}>
+          <Text style={styles.topIcon}>🔍</Text>
+          <Text style={styles.topTitle}>InkaVoice</Text>
+          <Pressable onPress={() => navigation.navigate('Settings')}><Text style={styles.topIcon}>⚙</Text></Pressable>
+        </View>
+
+        <Text style={styles.greeting}>{t('home_greeting')}</Text>
+        <Text style={styles.greetingSub}>
+          {t('home_greeting_sub')}
+        </Text>
+
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>🌐</Text>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder={t("home_search_placeholder")}
+            placeholderTextColor={colors.gray400}
+            style={styles.searchInput}
+          />
+          <Text style={styles.sparkle}>✨</Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesRow}
+        >
+          {CATEGORIES.map((item) => {
+            const active = activeCategory === item.id;
+            return (
+              <Pressable
+                key={item.id}
+                style={[styles.categoryPill, active && styles.categoryPillActive]}
+                onPress={() => setActiveCategory(item.id)}
+              >
+                <Text style={[styles.categoryText, active && styles.categoryTextActive]}>
+                  {t(item.labelKey)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionLabel}>{t('home_recommended_label')}</Text>
+            <Text style={styles.sectionTitle}>{t('home_recommended_title')}</Text>
+          </View>
+          <Text style={styles.sectionLink}>{t('home_view_all')}</Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.cardsRow}
+        >
+          {RECOMMENDED.map((item) => (
+            <View key={item.id} style={styles.discoverCard}>
+              <ImageBackground
+                source={{ uri: item.image }}
+                style={[styles.discoverImage, { backgroundColor: item.fallbackColor }]}
+                imageStyle={styles.discoverImageInner}
+              >
+                <View style={styles.regionBadge}>
+                  <Text style={styles.regionBadgeText}>{item.region}</Text>
+                </View>
+                <View style={styles.discoverOverlay}>
+                  <Text style={styles.discoverTitle}>{item.title}</Text>
+                </View>
+              </ImageBackground>
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.aiHeader}>
+          <Text style={styles.aiIcon}>✨</Text>
+          <Text style={styles.aiTitle}>{t('home_ai_title')}</Text>
+        </View>
+
+        <View style={styles.featuredCard}>
+          <ImageBackground
+            source={{
+              uri: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=800&q=80',
+            }}
+            style={styles.featuredImage}
+            imageStyle={styles.featuredImageInner}
+          >
+            <View style={styles.featuredImageOverlay} />
+          </ImageBackground>
+          <View style={styles.featuredBody}>
+            <Text style={styles.featuredLabel}>{t('home_featured_label')}</Text>
+            <Text style={styles.featuredTitle}>{t('home_featured_title')}</Text>
+            <Text style={styles.featuredDesc}>
+              {t('home_featured_desc')}
+            </Text>
+            <Pressable style={({ pressed }) => [styles.featuredBtn, pressed && styles.pressed]} onPress={() => navigation.navigate('ARView')}>
+              <Text style={styles.featuredBtnText}>{t('home_featured_btn')}</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {AI_PICKS.map((item) => (
+          <View key={item.id} style={[styles.pickCard, { backgroundColor: colors[item.bgKey] }]}>
+            <View style={styles.pickTop}>
+              <Text style={styles.pickIcon}>{item.icon}</Text>
+              <Text style={styles.pickMatch}>{item.match}</Text>
+            </View>
+            <Text style={styles.pickTitle}>{item.title}</Text>
+            <Text style={styles.pickDesc}>{item.description}</Text>
+            <Pressable style={styles.playBtn} onPress={() => navigation.navigate('Resultado')}>
+              <Text style={styles.playBtnText}>▶</Text>
+            </Pressable>
+          </View>
+        ))}
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      <Pressable
+        style={({ pressed }) => [styles.fab, { bottom: fabBottom }, pressed && styles.pressed]}
+        onPress={() => navigation.navigate('Asistente')}
+      >
+        <Text style={styles.fabIcon}>🎤</Text>
+      </Pressable>
+    </SafeAreaView>
+  );
+}
+
+

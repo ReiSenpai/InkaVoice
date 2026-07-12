@@ -5,9 +5,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAlert } from '../context/AlertContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { LANGUAGE_LABELS, LanguageCode } from '../i18n/translations';
 import { Modal } from 'react-native';
-import { colors } from '../theme/colors';
 
 type SettingItem = {
   id: string;
@@ -30,7 +30,7 @@ export default function SettingsScreen() {
   const { alert } = useAlert();
   const { language, setLanguage, t } = useLanguage();
   const [langModalVisible, setLangModalVisible] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDark, toggleDarkMode } = useTheme();
 
   const handleItemPress = (item: SettingItem) => {
     if (item.id === 'idioma') {
@@ -50,6 +50,39 @@ export default function SettingsScreen() {
       },
     ]);
   };
+
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, marginBottom: 16,
+  },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.green },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center' },
+  eyebrow: { fontSize: 11, fontWeight: '700', color: colors.gold, letterSpacing: 1.5, marginBottom: 8, textAlign: 'center' },
+  intro: { fontSize: 14, color: colors.gray600, textAlign: 'center', lineHeight: 21, marginBottom: 24, paddingHorizontal: 8 },
+  card: { width: '100%', backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  iconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  rowSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  footer: { alignItems: 'center', marginTop: 32, gap: 6 },
+  footerVersion: { fontSize: 11, fontWeight: '700', color: colors.gray400, letterSpacing: 1, marginTop: 8 },
+  footerTagline: { fontSize: 11, color: colors.gray400 },
+  langModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 32 },
+  langModalCard: { width: '100%', backgroundColor: colors.white, borderRadius: 20, padding: 20 },
+  langModalTitle: { fontSize: 17, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 16 },
+  langOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, marginBottom: 8, backgroundColor: colors.gray100 },
+  langOptionActive: { backgroundColor: '#E3F6EC' },
+  langOptionText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  langOptionTextActive: { color: colors.green },
+  langModalClose: { marginTop: 8, paddingVertical: 12, alignItems: 'center' },
+  langModalCloseText: { color: colors.gray500, fontWeight: '700' },
+});
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
@@ -94,10 +127,9 @@ export default function SettingsScreen() {
               <Text style={styles.rowSubtitle}>{t('settings_dark_subtitle')}</Text>
             </View>
             <Switch
-              value={darkMode}
+              value={isDark}
               onValueChange={(value) => {
-                setDarkMode(value);
-                alert(t('alert_dark_mode_title'), value ? t('alert_dark_mode_on') : t('alert_dark_mode_off'));
+                toggleDarkMode(value);
               }}
               trackColor={{ false: colors.gray200, true: colors.green }}
               thumbColor={colors.white}
@@ -154,32 +186,4 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, marginBottom: 16,
-  },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.green },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center' },
-  eyebrow: { fontSize: 11, fontWeight: '700', color: colors.gold, letterSpacing: 1.5, marginBottom: 8, textAlign: 'center' },
-  intro: { fontSize: 14, color: colors.gray600, textAlign: 'center', lineHeight: 21, marginBottom: 24, paddingHorizontal: 8 },
-  card: { width: '100%', backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  iconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: '#222' },
-  rowSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
-  footer: { alignItems: 'center', marginTop: 32, gap: 6 },
-  footerVersion: { fontSize: 11, fontWeight: '700', color: colors.gray400, letterSpacing: 1, marginTop: 8 },
-  footerTagline: { fontSize: 11, color: colors.gray400 },
-  langModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 32 },
-  langModalCard: { width: '100%', backgroundColor: colors.white, borderRadius: 20, padding: 20 },
-  langModalTitle: { fontSize: 17, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 16 },
-  langOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, marginBottom: 8, backgroundColor: colors.gray100 },
-  langOptionActive: { backgroundColor: '#E3F6EC' },
-  langOptionText: { fontSize: 15, fontWeight: '600', color: '#333' },
-  langOptionTextActive: { color: colors.green },
-  langModalClose: { marginTop: 8, paddingVertical: 12, alignItems: 'center' },
-  langModalCloseText: { color: colors.gray500, fontWeight: '700' },
-});
+

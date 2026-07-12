@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioGuide } from '../context/AudioGuideContext';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
-const C = { green: colors.green, gold: colors.gold, white: colors.white, muted: colors.muted };
+
 
 // Pantalla donde ya se ve el reproductor completo: ahí no lo duplicamos.
 const HIDDEN_ON_ROUTES = ['Audioguia'];
@@ -35,6 +35,23 @@ export default function MiniAudioPlayer({ currentRouteName, onExpand }: Props) {
   const topOffset = insets.top + 108;
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const { colors } = useTheme();
+  const C = { green: colors.green, gold: colors.gold, white: colors.white, muted: colors.muted };
+
+  const styles = StyleSheet.create({
+  container: { position: 'absolute', left: 12, right: 12, backgroundColor: C.green, borderRadius: 14, overflow: 'hidden', elevation: 10, zIndex: 50 },
+  progressTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
+  progressFill: { height: '100%', backgroundColor: C.gold },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, gap: 10 },
+  thumb: { width: 34, height: 34, borderRadius: 8 },
+  thumbPlaceholder: { backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  info: { flex: 1 },
+  title: { color: C.white, fontSize: 13, fontWeight: '700' },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 11 },
+  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+});
+
 
   return (
     <TouchableOpacity
@@ -68,15 +85,3 @@ export default function MiniAudioPlayer({ currentRouteName, onExpand }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { position: 'absolute', left: 12, right: 12, backgroundColor: C.green, borderRadius: 14, overflow: 'hidden', elevation: 10, zIndex: 50 },
-  progressTrack: { height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
-  progressFill: { height: '100%', backgroundColor: C.gold },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, gap: 10 },
-  thumb: { width: 34, height: 34, borderRadius: 8 },
-  thumbPlaceholder: { backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  info: { flex: 1 },
-  title: { color: C.white, fontSize: 13, fontWeight: '700' },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 11 },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-});

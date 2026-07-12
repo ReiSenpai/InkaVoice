@@ -13,12 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BrandHeader from '../components/BrandHeader';
-import { colors } from '../theme/colors';
 import { useUser } from '../context/UserContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 //import type { RootStackParamList } from '../navigation/types';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useLanguage();
   const { setName } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,107 +38,9 @@ export default function LoginScreen() {
 
   const Container = Platform.OS === 'web' ? View : SafeAreaView;
 
-  return (
-    <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <BrandHeader />
+  const { colors } = useTheme();
 
-          <View style={styles.card}>
-            <Text style={styles.label}>CORREO ELECTRÓNICO</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>✉</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="tu@ejemplo.com"
-                placeholderTextColor={colors.gray400}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.input}
-              />
-            </View>
-
-            <View style={styles.passwordRow}>
-              <Text style={styles.label}>CONTRASEÑA</Text>
-              <Pressable onPress={() => {}} hitSlop={8}>
-                <Text style={styles.forgotLink}>¿Olvidaste la clave?</Text>
-              </Pressable>
-            </View>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>🔒</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor={colors.gray400}
-                secureTextEntry={!showPassword}
-                style={[styles.input, styles.inputWithToggle]}
-              />
-              <Pressable
-                onPress={() => setShowPassword((prev) => !prev)}
-                style={styles.eyeBtn}
-                hitSlop={8}
-              >
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
-              </Pressable>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-              onPress={goToMain}
-            >
-              <Text style={styles.primaryBtnText}>INICIAR SESIÓN</Text>
-              <Text style={styles.primaryBtnArrow}>→</Text>
-            </Pressable>
-
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>O CONTINUAR CON</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}>
-              <Text style={styles.googleG}>G</Text>
-              <Text style={styles.secondaryBtnText}>Google</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.guestBtn, pressed && styles.pressed]}
-              onPress={goToGuest}
-            >
-              <Text style={styles.guestIcon}>👤</Text>
-              <Text style={styles.guestBtnText}>Continuar como invitado</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.registerText}>
-            ¿No tienes una cuenta?{' '}
-            <Text style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
-              Regístrate aquí
-            </Text>
-          </Text>
-
-          <View style={styles.footerIcons}>
-            <Text style={styles.footerIcon}>🌐</Text>
-            <Text style={styles.footerIcon}>🛡</Text>
-            <Text style={styles.footerIcon}>?</Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Container>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
@@ -320,3 +224,106 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
 });
+
+
+  return (
+    <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <BrandHeader />
+
+          <View style={styles.card}>
+            <Text style={styles.label}>{t('login_email')}</Text>
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputIcon}>✉</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t("login_email_placeholder")}
+                placeholderTextColor={colors.gray400}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.passwordRow}>
+              <Text style={styles.label}>{t('login_password')}</Text>
+              <Pressable onPress={() => {}} hitSlop={8}>
+                <Text style={styles.forgotLink}>{t('login_forgot')}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.inputWrap}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.gray400}
+                secureTextEntry={!showPassword}
+                style={[styles.input, styles.inputWithToggle]}
+              />
+              <Pressable
+                onPress={() => setShowPassword((prev) => !prev)}
+                style={styles.eyeBtn}
+                hitSlop={8}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+              onPress={goToMain}
+            >
+              <Text style={styles.primaryBtnText}>{t('login_submit')}</Text>
+              <Text style={styles.primaryBtnArrow}>→</Text>
+            </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('login_or_continue')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}>
+              <Text style={styles.googleG}>G</Text>
+              <Text style={styles.secondaryBtnText}>{t('login_google')}</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.guestBtn, pressed && styles.pressed]}
+              onPress={goToGuest}
+            >
+              <Text style={styles.guestIcon}>👤</Text>
+              <Text style={styles.guestBtnText}>{t('login_guest')}</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.registerText}>
+            {t('login_no_account')} 
+            <Text style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
+              {t('login_register_link')}
+            </Text>
+          </Text>
+
+          <View style={styles.footerIcons}>
+            <Text style={styles.footerIcon}>🌐</Text>
+            <Text style={styles.footerIcon}>🛡</Text>
+            <Text style={styles.footerIcon}>?</Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Container>
+  );
+}
+
+

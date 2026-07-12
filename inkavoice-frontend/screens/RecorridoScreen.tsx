@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getInitials } from '../utils/initials';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.greenDark, muted: colors.muted, white: colors.white, border: colors.border };
+
 
 const ROUTES = [
   { id: 1, title: 'Dunas de Ica y Oasis', subtitle: 'Huacachina y Paracas', region: 'Costa', duration: '2 Días', level: 'Fácil', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee' },
@@ -30,6 +30,42 @@ export default function RecorridoScreen() {
     const textOk = r.title.toLowerCase().includes(search.toLowerCase());
     return regionOk && textOk;
   }), [filter, search]);
+
+  const { colors } = useTheme();
+  const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.green, muted: colors.muted, white: colors.white, border: colors.border };
+
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  header: { paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  logo: { fontSize: 28, fontWeight: '800', color: C.green },
+  avatar: { width: 40, height: 40, borderRadius: 20 },
+  avatarInitialsWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+  title: { padding: 18, fontSize: 50, fontWeight: '800', color: C.text },
+  search: { marginHorizontal: 18, height: 54, backgroundColor: '#FFF', borderRadius: 27, paddingHorizontal: 18, alignItems: 'center', flexDirection: 'row' },
+  input: { flex: 1, marginLeft: 10 },
+  filterBtn: { marginLeft: 18, marginTop: 18, width: 120, height: 48, borderRadius: 24, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 },
+  filterText: { color: '#FFF' },
+  tab: { borderWidth: 1, borderColor: '#CCC', paddingHorizontal: 18, height: 42, borderRadius: 22, justifyContent: 'center' },
+  tabActive: { borderColor: C.green },
+  tabText: { color: '#666' },
+  sectionHeader: { padding: 18, flexDirection: 'row', justifyContent: 'space-between' },
+  section: { fontSize: 36, fontWeight: '800', color: C.text },
+  link: { color: C.green },
+  card: { width: 300, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden' },
+  cardImage: { width: '100%', height: 260 },
+  badge: { position: 'absolute', top: 18, left: 18, backgroundColor: '#FFF', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  cardBody: { padding: 18 },
+  cardTitle: { fontSize: 26, fontWeight: '700' },
+  cardSub: { color: C.muted },
+  meta: { marginTop: 10 },
+  detailBtn: { marginTop: 20, height: 48, borderRadius: 24, backgroundColor: '#F4F4F4', justifyContent: 'center', alignItems: 'center' },
+  experience: { margin: 18, backgroundColor: '#FFF', padding: 24, borderRadius: 26, marginBottom: 120 },
+  expTitle: { fontSize: 24, fontWeight: '700' },
+  expSub: { marginTop: 8, color: C.muted },
+  fab: { position: 'absolute', right: 22, bottom: 40, width: 72, height: 72, borderRadius: 36, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center' },
+});
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
@@ -101,34 +137,4 @@ export default function RecorridoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  header: { paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logo: { fontSize: 28, fontWeight: '800', color: C.green },
-  avatar: { width: 40, height: 40, borderRadius: 20 },
-  avatarInitialsWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
-  avatarInitialsText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
-  title: { padding: 18, fontSize: 50, fontWeight: '800', color: C.text },
-  search: { marginHorizontal: 18, height: 54, backgroundColor: '#FFF', borderRadius: 27, paddingHorizontal: 18, alignItems: 'center', flexDirection: 'row' },
-  input: { flex: 1, marginLeft: 10 },
-  filterBtn: { marginLeft: 18, marginTop: 18, width: 120, height: 48, borderRadius: 24, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 },
-  filterText: { color: '#FFF' },
-  tab: { borderWidth: 1, borderColor: '#CCC', paddingHorizontal: 18, height: 42, borderRadius: 22, justifyContent: 'center' },
-  tabActive: { borderColor: C.green },
-  tabText: { color: '#666' },
-  sectionHeader: { padding: 18, flexDirection: 'row', justifyContent: 'space-between' },
-  section: { fontSize: 36, fontWeight: '800', color: C.text },
-  link: { color: C.green },
-  card: { width: 300, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 30, overflow: 'hidden' },
-  cardImage: { width: '100%', height: 260 },
-  badge: { position: 'absolute', top: 18, left: 18, backgroundColor: '#FFF', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  cardBody: { padding: 18 },
-  cardTitle: { fontSize: 26, fontWeight: '700' },
-  cardSub: { color: C.muted },
-  meta: { marginTop: 10 },
-  detailBtn: { marginTop: 20, height: 48, borderRadius: 24, backgroundColor: '#F4F4F4', justifyContent: 'center', alignItems: 'center' },
-  experience: { margin: 18, backgroundColor: '#FFF', padding: 24, borderRadius: 26, marginBottom: 120 },
-  expTitle: { fontSize: 24, fontWeight: '700' },
-  expSub: { marginTop: 8, color: C.muted },
-  fab: { position: 'absolute', right: 22, bottom: 40, width: 72, height: 72, borderRadius: 36, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center' },
-});
+

@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Pla
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { colors } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { useAlert } from '../context/AlertContext';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
-const C = { bg: colors.background, white: colors.white, green: colors.green, green2: colors.greenDark, gold: colors.gold, border: colors.border, text: colors.greenDark, muted: colors.muted };
+
 
 // Vista inicial: todo el Perú
 const PERU_REGION: Region = {
@@ -145,6 +145,46 @@ export default function MapaScreen() {
   const visibleRoutes = activeZone ? ROUTES[activeZone] : [...ROUTES.costa, ...ROUTES.sierra, ...ROUTES.selva];
   const visibleSites = activeZone ? SITES.filter(s => s.zone === activeZone) : SITES;
 
+  const { colors } = useTheme();
+  const C = { bg: colors.background, white: colors.white, green: colors.green, green2: colors.greenDark, gold: colors.gold, border: colors.border, text: colors.greenDark, muted: colors.muted };
+
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  header: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white, paddingBottom: 10 },
+  title: { fontSize: 28, fontWeight: '800', color: C.green },
+  zoneTabs: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 12, backgroundColor: C.white, gap: 8, alignItems: 'center' },
+  zoneTab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F0F0EE' },
+  zoneTabText: { fontSize: 13, fontWeight: '700', color: C.muted },
+  zoneClear: { padding: 6, borderRadius: 20, backgroundColor: '#F0F0EE' },
+  mapArea: { flex: 1 },
+  map: { flex: 1, marginHorizontal: 18, borderRadius: 30, overflow: 'hidden' },
+  pinCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  pinCircleActive: { borderColor: C.gold, borderWidth: 3, transform: [{ scale: 1.15 }] },
+  rightButtons: { position: 'absolute', right: 32, top: 20, gap: 14 },
+  floatBtn: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  bottomCard: { position: 'absolute', bottom: 25, left: 0, right: 0 },
+  card: { width: 260, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' },
+  cardSelected: { borderWidth: 2, borderColor: C.green },
+  cardImg: { width: '100%', height: 150 },
+  cardBody: { padding: 14 },
+  routeTitle: { fontWeight: '800', fontSize: 18 },
+  routeMeta: { marginTop: 6, color: C.muted },
+  startBtn: { alignSelf: 'center', marginTop: 18, height: 58, paddingHorizontal: 24, borderRadius: 30, backgroundColor: C.green, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  startText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
+
+  siteCard: { position: 'absolute', bottom: 25, left: 18, right: 18, backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', overflow: 'hidden', elevation: 8 },
+  siteCardClose: { position: 'absolute', top: 8, right: 8, zIndex: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+  siteCardImg: { width: 110, height: '100%' },
+  siteCardBody: { flex: 1, padding: 14, gap: 4 },
+  siteCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FAF4', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 2 },
+  siteCardBadgeText: { fontSize: 10, fontWeight: '800', color: C.green },
+  siteCardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
+  siteCardDesc: { fontSize: 12, color: C.muted, lineHeight: 16 },
+  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.green, borderRadius: 10, paddingVertical: 8, marginTop: 6, alignSelf: 'flex-start', paddingHorizontal: 14 },
+  siteCardBtnText: { color: '#FFF', fontWeight: '700', fontSize: 12 },
+});
+
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -260,38 +300,3 @@ export default function MapaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  header: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white, paddingBottom: 10 },
-  title: { fontSize: 28, fontWeight: '800', color: C.green },
-  zoneTabs: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 12, backgroundColor: C.white, gap: 8, alignItems: 'center' },
-  zoneTab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F0F0EE' },
-  zoneTabText: { fontSize: 13, fontWeight: '700', color: C.muted },
-  zoneClear: { padding: 6, borderRadius: 20, backgroundColor: '#F0F0EE' },
-  mapArea: { flex: 1 },
-  map: { flex: 1, marginHorizontal: 18, borderRadius: 30, overflow: 'hidden' },
-  pinCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
-  pinCircleActive: { borderColor: C.gold, borderWidth: 3, transform: [{ scale: 1.15 }] },
-  rightButtons: { position: 'absolute', right: 32, top: 20, gap: 14 },
-  floatBtn: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  bottomCard: { position: 'absolute', bottom: 25, left: 0, right: 0 },
-  card: { width: 260, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' },
-  cardSelected: { borderWidth: 2, borderColor: C.green },
-  cardImg: { width: '100%', height: 150 },
-  cardBody: { padding: 14 },
-  routeTitle: { fontWeight: '800', fontSize: 18 },
-  routeMeta: { marginTop: 6, color: C.muted },
-  startBtn: { alignSelf: 'center', marginTop: 18, height: 58, paddingHorizontal: 24, borderRadius: 30, backgroundColor: C.green, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  startText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
-
-  siteCard: { position: 'absolute', bottom: 25, left: 18, right: 18, backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', overflow: 'hidden', elevation: 8 },
-  siteCardClose: { position: 'absolute', top: 8, right: 8, zIndex: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-  siteCardImg: { width: 110, height: '100%' },
-  siteCardBody: { flex: 1, padding: 14, gap: 4 },
-  siteCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FAF4', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 2 },
-  siteCardBadgeText: { fontSize: 10, fontWeight: '800', color: C.green },
-  siteCardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
-  siteCardDesc: { fontSize: 12, color: C.muted, lineHeight: 16 },
-  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.green, borderRadius: 10, paddingVertical: 8, marginTop: 6, alignSelf: 'flex-start', paddingHorizontal: 14 },
-  siteCardBtnText: { color: '#FFF', fontWeight: '700', fontSize: 12 },
-});

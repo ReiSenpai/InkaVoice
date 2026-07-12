@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioGuide } from '../context/AudioGuideContext';
 import BottomTabBar from '../components/BottomTabBar';
 import { useAlert } from '../context/AlertContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
-const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
+
 
 const CHAPTER_TEXTS: Record<string, { title: string; desc: string }> = {
   ESPAÑOL: { title: 'La Casa de la Gloria del Sol', desc: 'Descubre cómo estas enormes piedras, algunas con más de 100 toneladas, fueron talladas con tal precisión que ni una hoja de papel puede deslizarse entre ellas. Su diseño refleja los cuatro suyos del Tahuantinsuyo.' },
@@ -119,6 +119,45 @@ export default function AudioguiaScreen() {
     );
   };
 
+  const { colors } = useTheme();
+  const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
+
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 50 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: C.green },
+  location: { textAlign: 'center', fontStyle: 'italic', color: C.muted, marginBottom: 24, fontSize: 13 },
+  circleContainer: { alignItems: 'center', marginBottom: 12, position: 'relative' },
+  circleOuter: { width: 210, height: 210, borderRadius: 105, borderWidth: 6, borderColor: '#DDD', overflow: 'hidden', backgroundColor: '#EEE' },
+  imageWrapper: { width: '100%', height: '100%' },
+  coverImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  arcDecor: { position: 'absolute', width: 230, height: 230, borderRadius: 115, borderWidth: 4, borderColor: 'transparent', top: -10, transform: [{ rotate: '30deg' }] },
+  timeBadge: { backgroundColor: '#2A2A2A', alignSelf: 'center', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, marginBottom: 20 },
+  timeText: { color: '#FFD700', fontWeight: '700', fontSize: 13, letterSpacing: 1 },
+  languageContainer: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 28 },
+  langBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: '#CCC' },
+  langBtnActive: { backgroundColor: C.gold, borderColor: C.gold },
+  langText: { fontSize: 12, fontWeight: '700', color: C.muted, letterSpacing: 0.5 },
+  langTextActive: { color: C.white },
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 32, marginBottom: 20 },
+  playButton: { backgroundColor: C.gold, width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', elevation: 6 },
+  progressTrack: { height: 4, backgroundColor: '#DDD', borderRadius: 2, marginBottom: 28, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: C.goldL, borderRadius: 2 },
+  chapterCard: { backgroundColor: C.card, padding: 20, borderRadius: 20, gap: 10 },
+  chapterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chapterLabel: { color: C.green, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  chapterTitle: { fontSize: 16, fontWeight: '700', color: C.dark },
+  chapterDesc: { fontSize: 14, color: '#555', lineHeight: 22 },
+  translatingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  translatingText: { color: C.muted, fontSize: 14, fontStyle: 'italic' },
+  translatedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F5E9', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  translatedBadgeText: { color: C.green, fontSize: 11, fontWeight: '700' },
+  chapterProgressTrack: { height: 4, backgroundColor: '#DDD', borderRadius: 2, marginTop: 6, position: 'relative' },
+  chapterProgressFill: { height: '100%', backgroundColor: C.goldL, borderRadius: 2 },
+  chapterProgressDot: { position: 'absolute', top: -4, width: 12, height: 12, borderRadius: 6, backgroundColor: C.gold, marginLeft: -6 },
+});
+
+
   return (
     <View style={{ flex: 1 }}>
     <ScrollView style={[styles.container, { paddingTop: insets.top + 12 }]} showsVerticalScrollIndicator={false}>
@@ -202,37 +241,3 @@ export default function AudioguiaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 50 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: C.green },
-  location: { textAlign: 'center', fontStyle: 'italic', color: C.muted, marginBottom: 24, fontSize: 13 },
-  circleContainer: { alignItems: 'center', marginBottom: 12, position: 'relative' },
-  circleOuter: { width: 210, height: 210, borderRadius: 105, borderWidth: 6, borderColor: '#DDD', overflow: 'hidden', backgroundColor: '#EEE' },
-  imageWrapper: { width: '100%', height: '100%' },
-  coverImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  arcDecor: { position: 'absolute', width: 230, height: 230, borderRadius: 115, borderWidth: 4, borderColor: 'transparent', top: -10, transform: [{ rotate: '30deg' }] },
-  timeBadge: { backgroundColor: '#2A2A2A', alignSelf: 'center', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, marginBottom: 20 },
-  timeText: { color: '#FFD700', fontWeight: '700', fontSize: 13, letterSpacing: 1 },
-  languageContainer: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 28 },
-  langBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: '#CCC' },
-  langBtnActive: { backgroundColor: C.gold, borderColor: C.gold },
-  langText: { fontSize: 12, fontWeight: '700', color: C.muted, letterSpacing: 0.5 },
-  langTextActive: { color: C.white },
-  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 32, marginBottom: 20 },
-  playButton: { backgroundColor: C.gold, width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', elevation: 6 },
-  progressTrack: { height: 4, backgroundColor: '#DDD', borderRadius: 2, marginBottom: 28, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: C.goldL, borderRadius: 2 },
-  chapterCard: { backgroundColor: C.card, padding: 20, borderRadius: 20, gap: 10 },
-  chapterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chapterLabel: { color: C.green, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
-  chapterTitle: { fontSize: 16, fontWeight: '700', color: C.dark },
-  chapterDesc: { fontSize: 14, color: '#555', lineHeight: 22 },
-  translatingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  translatingText: { color: C.muted, fontSize: 14, fontStyle: 'italic' },
-  translatedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#E8F5E9', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  translatedBadgeText: { color: C.green, fontSize: 11, fontWeight: '700' },
-  chapterProgressTrack: { height: 4, backgroundColor: '#DDD', borderRadius: 2, marginTop: 6, position: 'relative' },
-  chapterProgressFill: { height: '100%', backgroundColor: C.goldL, borderRadius: 2 },
-  chapterProgressDot: { position: 'absolute', top: -4, width: 12, height: 12, borderRadius: 6, backgroundColor: C.gold, marginLeft: -6 },
-});

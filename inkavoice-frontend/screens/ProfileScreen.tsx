@@ -8,7 +8,7 @@ import { useUser } from '../context/UserContext';
 import { useAlert } from '../context/AlertContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getInitials } from '../utils/initials';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 const STATS = [
   { id: 'sitios', icon: 'location-outline', value: 12, labelKey: 'profile_stat_sites' },
@@ -139,6 +139,73 @@ export default function ProfileScreen() {
     setMemoryModalVisible(false);
   };
 
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollContent: { paddingBottom: 40 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
+  avatarSection: { alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
+  avatarWrapper: { width: 120, height: 120, borderRadius: 20, marginBottom: 16, position: 'relative' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 20, borderWidth: 3, borderColor: colors.gold },
+  avatarInitials: { fontSize: 36, fontWeight: '800', color: colors.green },
+  avatarPlaceholder: { width: '100%', height: '100%', borderRadius: 20, backgroundColor: colors.gray100, borderWidth: 3, borderColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  editBadge: { position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white },
+  name: { fontSize: 22, fontWeight: '700', color: colors.green, marginBottom: 4 },
+  changePhotoText: { fontSize: 13, color: colors.teal, fontWeight: '600' },
+
+  statsRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
+  statCard: { flex: 1, backgroundColor: colors.gray100, borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
+  statValue: { fontSize: 22, fontWeight: '800', color: colors.green },
+  statLabel: { fontSize: 9, fontWeight: '700', color: colors.gray500, textAlign: 'center', letterSpacing: 0.5 },
+
+  progressSection: { paddingHorizontal: 20, marginBottom: 28 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  progressTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
+  progressSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  progressPct: { fontSize: 18, fontWeight: '800', color: colors.gold },
+  progressTrack: { height: 8, borderRadius: 4, backgroundColor: colors.gray200, overflow: 'hidden', marginBottom: 10 },
+  progressFill: { height: '100%', backgroundColor: colors.gold, borderRadius: 4 },
+  regionLegend: { flexDirection: 'row', justifyContent: 'space-between' },
+  regionLegendText: { fontSize: 11, color: colors.gray500, fontWeight: '600' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
+  sectionLink: { fontSize: 12, fontWeight: '600', color: colors.teal },
+
+  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 28 },
+  badgeCard: { width: '30%', alignItems: 'center', gap: 8 },
+  badgeIconWrap: { width: 64, height: 64, borderRadius: 16, backgroundColor: colors.beige, alignItems: 'center', justifyContent: 'center' },
+  badgeIconWrapLocked: { backgroundColor: colors.gray100 },
+  badgeTitle: { fontSize: 11, fontWeight: '600', color: colors.green, textAlign: 'center' },
+  badgeTitleLocked: { color: colors.gray400 },
+
+  memoryCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 10, backgroundColor: colors.greenDark, borderRadius: 14, padding: 14, gap: 12 },
+  memoryIconWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  memoryTitle: { color: colors.textOnDark, fontSize: 14, fontWeight: '700' },
+  memorySubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 },
+
+  newMemoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 12, backgroundColor: colors.gold, borderRadius: 14, paddingVertical: 16 },
+  newMemoryText: { color: colors.textOnDark, fontSize: 14, fontWeight: '700' },
+
+  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end', zIndex: 10 },
+  modalContent: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 4 },
+  modalSubtitle: { fontSize: 14, color: colors.gray400, textAlign: 'center', marginBottom: 16 },
+  modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalIcon: { marginRight: 14, width: 24, textAlign: 'center' },
+  modalOptionText: { fontSize: 16, fontWeight: '500', color: '#333333' },
+
+  memoryInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1f2937', marginBottom: 16 },
+  memoryModalActions: { flexDirection: 'row', gap: 12 },
+  memoryModalCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  memoryModalCancelText: { color: colors.gray500, fontWeight: '700' },
+  memoryModalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center' },
+  memoryModalConfirmText: { color: colors.white, fontWeight: '700' },
+});
+
+
   return (
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
       <View style={styles.header}>
@@ -157,7 +224,7 @@ export default function ProfileScreen() {
               </View>
             )}
             <View style={styles.editBadge}>
-              <Ionicons name="camera" size={16} color={colors.white} />
+              <Ionicons name="camera" size={16} color={colors.textOnDark} />
             </View>
           </TouchableOpacity>
 
@@ -222,7 +289,7 @@ export default function ProfileScreen() {
             onPress={() => alert(memory.title, t('alert_memory_playing_message'))}
           >
             <View style={styles.memoryIconWrap}>
-              <Ionicons name="play-circle" size={28} color={colors.white} />
+              <Ionicons name="play-circle" size={28} color={colors.textOnDark} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.memoryTitle}>{memory.title}</Text>
@@ -232,7 +299,7 @@ export default function ProfileScreen() {
         ))}
 
         <TouchableOpacity style={styles.newMemoryBtn} onPress={openNewMemoryModal}>
-          <Ionicons name="add-circle-outline" size={20} color={colors.white} />
+          <Ionicons name="add-circle-outline" size={20} color={colors.textOnDark} />
           <Text style={styles.newMemoryText}>{t('profile_new_memory')}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -303,66 +370,4 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
-  avatarSection: { alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
-  avatarWrapper: { width: 120, height: 120, borderRadius: 20, marginBottom: 16, position: 'relative' },
-  avatarImage: { width: '100%', height: '100%', borderRadius: 20, borderWidth: 3, borderColor: colors.gold },
-  avatarInitials: { fontSize: 36, fontWeight: '800', color: colors.green },
-  avatarPlaceholder: { width: '100%', height: '100%', borderRadius: 20, backgroundColor: colors.gray100, borderWidth: 3, borderColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  editBadge: { position: 'absolute', bottom: -6, right: -6, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white },
-  name: { fontSize: 22, fontWeight: '700', color: colors.green, marginBottom: 4 },
-  changePhotoText: { fontSize: 13, color: colors.teal, fontWeight: '600' },
 
-  statsRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
-  statCard: { flex: 1, backgroundColor: colors.gray100, borderRadius: 16, paddingVertical: 16, alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.green },
-  statLabel: { fontSize: 9, fontWeight: '700', color: colors.gray500, textAlign: 'center', letterSpacing: 0.5 },
-
-  progressSection: { paddingHorizontal: 20, marginBottom: 28 },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  progressTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
-  progressSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
-  progressPct: { fontSize: 18, fontWeight: '800', color: colors.gold },
-  progressTrack: { height: 8, borderRadius: 4, backgroundColor: colors.gray200, overflow: 'hidden', marginBottom: 10 },
-  progressFill: { height: '100%', backgroundColor: colors.gold, borderRadius: 4 },
-  regionLegend: { flexDirection: 'row', justifyContent: 'space-between' },
-  regionLegendText: { fontSize: 11, color: colors.gray500, fontWeight: '600' },
-
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.green },
-  sectionLink: { fontSize: 12, fontWeight: '600', color: colors.teal },
-
-  badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 28 },
-  badgeCard: { width: '30%', alignItems: 'center', gap: 8 },
-  badgeIconWrap: { width: 64, height: 64, borderRadius: 16, backgroundColor: colors.beige, alignItems: 'center', justifyContent: 'center' },
-  badgeIconWrapLocked: { backgroundColor: colors.gray100 },
-  badgeTitle: { fontSize: 11, fontWeight: '600', color: colors.green, textAlign: 'center' },
-  badgeTitleLocked: { color: colors.gray400 },
-
-  memoryCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 10, backgroundColor: colors.greenDark, borderRadius: 14, padding: 14, gap: 12 },
-  memoryIconWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  memoryTitle: { color: colors.white, fontSize: 14, fontWeight: '700' },
-  memorySubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 },
-
-  newMemoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 12, backgroundColor: colors.gold, borderRadius: 14, paddingVertical: 16 },
-  newMemoryText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-
-  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end', zIndex: 10 },
-  modalContent: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 20 },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.green, textAlign: 'center', marginBottom: 4 },
-  modalSubtitle: { fontSize: 14, color: colors.gray400, textAlign: 'center', marginBottom: 16 },
-  modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  modalIcon: { marginRight: 14, width: 24, textAlign: 'center' },
-  modalOptionText: { fontSize: 16, fontWeight: '500', color: '#333333' },
-
-  memoryInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1f2937', marginBottom: 16 },
-  memoryModalActions: { flexDirection: 'row', gap: 12 },
-  memoryModalCancel: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  memoryModalCancelText: { color: colors.gray500, fontWeight: '700' },
-  memoryModalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center' },
-  memoryModalConfirmText: { color: colors.white, fontWeight: '700' },
-});

@@ -1,27 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 export default function BrandHeader() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.logoWrap}>
-        <View style={styles.logoBox}>
-          <View style={[styles.bar, styles.bar1]} />
-          <View style={[styles.bar, styles.bar2]} />
-          <View style={[styles.bar, styles.bar3]} />
-          <View style={[styles.bar, styles.bar4]} />
-          <View style={[styles.bar, styles.bar5]} />
-        </View>
-        <View style={styles.diamond} />
-      </View>
-
-      <Text style={styles.brandName}>InkaVoice</Text>
-      <Text style={styles.tagline}>ECOS DE UNA CIVILIZACIÓN</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingTop: 8,
@@ -81,3 +63,24 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.logoWrap}>
+        <View style={styles.logoBox}>
+          <View style={[styles.bar, styles.bar1]} />
+          <View style={[styles.bar, styles.bar2]} />
+          <View style={[styles.bar, styles.bar3]} />
+          <View style={[styles.bar, styles.bar4]} />
+          <View style={[styles.bar, styles.bar5]} />
+        </View>
+        <View style={styles.diamond} />
+      </View>
+
+      <Text style={styles.brandName}>InkaVoice</Text>
+      <Text style={styles.tagline}>ECOS DE UNA CIVILIZACIÓN</Text>
+    </View>
+  );
+}
+
+

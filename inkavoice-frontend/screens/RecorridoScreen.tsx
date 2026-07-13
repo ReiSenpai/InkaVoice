@@ -1,11 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../context/UserContext';
+import { useLanguage } from '../context/LanguageContext';
+import { getInitials } from '../utils/initials';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.greenDark, muted: colors.muted, white: colors.white, border: colors.border };
+
 
 const ROUTES = [
   { id: 1, title: 'Dunas de Ica y Oasis', subtitle: 'Huacachina y Paracas', region: 'Costa', duration: '2 Días', level: 'Fácil', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee' },
@@ -15,6 +19,9 @@ const ROUTES = [
 
 export default function RecorridoScreen() {
   const navigation = useNavigation<any>();
+  const { photoUri, name } = useUser();
+  const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('Todas');
   const [search, setSearch] = useState('');
 
@@ -24,76 +31,16 @@ export default function RecorridoScreen() {
     return regionOk && textOk;
   }), [filter, search]);
 
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="close" size={28} color={C.green} />
-          </TouchableOpacity>
-          <Text style={styles.logo}>InkaVoice</Text>
-          <Image source={{ uri: 'https://i.pravatar.cc/100' }} style={styles.avatar} />
-        </View>
+  const { colors } = useTheme();
+  const C = { bg: colors.background, green: colors.green, gold: colors.gold, text: colors.green, muted: colors.muted, white: colors.white, border: colors.border };
 
-        <Text style={styles.title}>Planifica tu Expedición</Text>
-
-        <View style={styles.search}>
-          <Ionicons name="search" size={20} color="#777" />
-          <TextInput value={search} onChangeText={setSearch} placeholder="Busca tu próxima ruta..." placeholderTextColor="#999" style={styles.input} />
-        </View>
-
-        <TouchableOpacity style={styles.filterBtn}>
-          <Ionicons name="options" size={18} color="#FFF" />
-          <Text style={styles.filterText}>Filtros</Text>
-        </TouchableOpacity>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingTop: 18 }}>
-          {['Todas', 'Costa', 'Sierra', 'Selva'].map(v => (
-            <TouchableOpacity key={v} style={[styles.tab, filter === v && styles.tabActive]} onPress={() => setFilter(v)}>
-              <Text style={[styles.tabText, filter === v && { color: C.green }]}>{v}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.section}>Rutas Cercanas</Text>
-          <TouchableOpacity><Text style={styles.link}>Ver todas</Text></TouchableOpacity>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {routes.map(r => (
-            <TouchableOpacity key={r.id} style={styles.card} onPress={() => navigation.navigate('Asistente')}>
-              <Image source={{ uri: r.image }} style={styles.cardImage} />
-              <View style={styles.badge}><Text>{r.region}</Text></View>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{r.title}</Text>
-                <Text style={styles.cardSub}>{r.subtitle}</Text>
-                <Text style={styles.meta}>{r.duration} · {r.level}</Text>
-                <TouchableOpacity style={styles.detailBtn}><Text>Ver Detalle</Text></TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <Text style={[styles.section, { marginTop: 30 }]}>Nuevas Experiencias</Text>
-        <View style={styles.experience}>
-          <Text style={styles.expTitle}>Explora rutas con IA</Text>
-          <Text style={styles.expSub}>Recorridos personalizados</Text>
-        </View>
-      </ScrollView>
-
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Asistente')}>
-        <Ionicons name="add" size={32} color="#FFF" />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg, paddingTop: 55 },
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
   header: { paddingHorizontal: 18, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   logo: { fontSize: 28, fontWeight: '800', color: C.green },
   avatar: { width: 40, height: 40, borderRadius: 20 },
+  avatarInitialsWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   title: { padding: 18, fontSize: 50, fontWeight: '800', color: C.text },
   search: { marginHorizontal: 18, height: 54, backgroundColor: '#FFF', borderRadius: 27, paddingHorizontal: 18, alignItems: 'center', flexDirection: 'row' },
   input: { flex: 1, marginLeft: 10 },
@@ -118,3 +65,76 @@ const styles = StyleSheet.create({
   expSub: { marginTop: 8, color: C.muted },
   fab: { position: 'absolute', right: 22, bottom: 40, width: 72, height: 72, borderRadius: 36, backgroundColor: C.green, justifyContent: 'center', alignItems: 'center' },
 });
+
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="close" size={28} color={C.green} />
+          </TouchableOpacity>
+          <Text style={styles.logo}>InkaVoice</Text>
+          {photoUri ? (<Image source={{ uri: photoUri }} style={styles.avatar} />) : (<View style={styles.avatarInitialsWrap}><Text style={styles.avatarInitialsText}>{getInitials(name)}</Text></View>)}
+        </View>
+
+        <Text style={styles.title}>{t('routes_title')}</Text>
+
+        <View style={styles.search}>
+          <Ionicons name="search" size={20} color="#777" />
+          <TextInput value={search} onChangeText={setSearch} placeholder={t("routes_search_placeholder")} placeholderTextColor="#999" style={styles.input} />
+        </View>
+
+        <TouchableOpacity style={styles.filterBtn}>
+          <Ionicons name="options" size={18} color="#FFF" />
+          <Text style={styles.filterText}>{t('routes_filters')}</Text>
+        </TouchableOpacity>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingTop: 18 }}>
+          {[
+            { id: 'Todas', labelKey: 'filter_all' },
+            { id: 'Costa', labelKey: 'category_coast' },
+            { id: 'Sierra', labelKey: 'category_highlands' },
+            { id: 'Selva', labelKey: 'category_jungle' },
+          ].map(v => (
+            <TouchableOpacity key={v.id} style={[styles.tab, filter === v.id && styles.tabActive]} onPress={() => setFilter(v.id)}>
+              <Text style={[styles.tabText, filter === v.id && { color: C.green }]}>{t(v.labelKey)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.section}>{t('routes_nearby')}</Text>
+          <TouchableOpacity><Text style={styles.link}>{t('routes_view_all')}</Text></TouchableOpacity>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {routes.map(r => (
+            <TouchableOpacity key={r.id} style={styles.card} onPress={() => navigation.navigate('Asistente')}>
+              <Image source={{ uri: r.image }} style={styles.cardImage} />
+              <View style={styles.badge}><Text>{r.region}</Text></View>
+              <View style={styles.cardBody}>
+                <Text style={styles.cardTitle}>{r.title}</Text>
+                <Text style={styles.cardSub}>{r.subtitle}</Text>
+                <Text style={styles.meta}>{r.duration} · {r.level}</Text>
+                <TouchableOpacity style={styles.detailBtn}><Text>{t('routes_view_detail')}</Text></TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <Text style={[styles.section, { marginTop: 30 }]}>{t('routes_new_experiences')}</Text>
+        <View style={styles.experience}>
+          <Text style={styles.expTitle}>{t('routes_ai_explore')}</Text>
+          <Text style={styles.expSub}>{t('routes_personalized')}</Text>
+        </View>
+      </ScrollView>
+
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Asistente')}>
+        <Ionicons name="add" size={32} color="#FFF" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+

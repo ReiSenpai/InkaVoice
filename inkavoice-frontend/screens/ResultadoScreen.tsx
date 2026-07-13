@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, Image, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAudioGuide } from '../context/AudioGuideContext';
+import { useLanguage } from '../context/LanguageContext';
 import BottomTabBar from '../components/BottomTabBar';
+import { useTheme } from '../context/ThemeContext';
 
-const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
+
 
 type Lang = 'Español' | 'English' | 'Quechua';
 
@@ -50,13 +53,26 @@ const CONTENT: Record<Lang, { region: string; title: string; description: string
 
 const LANGUAGES: Lang[] = ['Español', 'English', 'Quechua'];
 
+// Imagen de respaldo si el usuario llega a esta pantalla sin haber tomado/elegido una foto
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000';
+
 export default function ResultadoScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const { isActive: isAudioActive } = useAudioGuide();
+
+  // Si el mini-reproductor está visible abajo, subimos el botón del micrófono
+  // para que no se solapen.
+  const micBottom = isAudioActive ? 96 + 64 : 96;
   const [language, setLanguage] = useState<Lang>('Español');
   const [translating, setTranslating] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
 
   const content = CONTENT[language];
+  const photoUri: string | undefined = route.params?.photoUri;
+  const backgroundSource = photoUri ? { uri: photoUri } : { uri: FALLBACK_IMAGE };
 
   const handleSelectLang = (lang: Lang) => {
     setShowLangModal(false);
@@ -68,106 +84,12 @@ export default function ResultadoScreen() {
     }, 800);
   };
 
-  return (
-    <View style={styles.container}>
-      <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }} style={styles.backgroundImage}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main', { screen: 'ARView' })}>
-            <Ionicons name="arrow-back" size={24} color={C.green} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>InkaVoice</Text>
-          <Ionicons name="settings-outline" size={24} color={C.white} />
-        </View>
-        <View style={styles.recognitionBadge}>
-          <Text style={styles.recognitionText}>● RECONOCIMIENTO 98%</Text>
-        </View>
-      </ImageBackground>
+  const { colors } = useTheme();
+  const C = { green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, cream: colors.beige, muted: colors.muted, border: colors.border, dark: colors.greenDark };
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <View style={styles.badgeLabel}><Text style={styles.badgeText}>{content.region}</Text></View>
-          <Text style={styles.title}>{content.title}</Text>
-
-          {language !== 'Español' && (
-            <View style={styles.activeLangBadge}>
-              <Ionicons name="language-outline" size={13} color={C.green} />
-              <Text style={styles.activeLangText}>Traducido · {language}</Text>
-            </View>
-          )}
-
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Audioguia', { nombre: content.title, region: content.region })}>
-            <Ionicons name="volume-medium" size={20} color={C.white} />
-            <Text style={styles.primaryButtonText}>{content.btnListen}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowLangModal(true)}>
-            <Ionicons name="language-outline" size={20} color={C.green} />
-            <Text style={styles.secondaryButtonText}>{content.btnTranslate}</Text>
-            <View style={styles.langIndicator}><Text style={styles.langIndicatorText}>{language.toUpperCase()}</Text></View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {translating ? (
-            <View style={styles.translatingBox}>
-              <ActivityIndicator color={C.gold} size="large" />
-              <Text style={styles.translatingText}>Traduciendo al {language}...</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.sectionTitle}>{content.sectionHistory}</Text>
-              <Text style={styles.bodyText}>{content.history1}</Text>
-              <Text style={styles.bodyText}>{content.history2}</Text>
-              <View style={styles.divider} />
-              <View style={styles.curatorCard}>
-                <View style={styles.curatorHeader}>
-                  <Image source={{ uri: 'https://randomuser.me/api/portraits/men/45.jpg' }} style={styles.curatorAvatar} />
-                  <Text style={styles.curatorLabel}>{content.sectionCurator}</Text>
-                </View>
-                <Text style={styles.curatorText}>{content.curator}</Text>
-              </View>
-            </>
-          )}
-          <View style={{ height: 168 }} />
-        </View>
-      </ScrollView>
-
-      <TouchableOpacity style={styles.micButton} onPress={() => navigation.navigate('Asistente')}>
-        <Ionicons name="mic" size={28} color={C.white} />
-      </TouchableOpacity>
-
-      <Modal visible={showLangModal} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowLangModal(false)}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Selecciona el idioma</Text>
-            <Text style={styles.modalSub}>El contenido se traducirá automáticamente</Text>
-            {LANGUAGES.map(lang => (
-              <TouchableOpacity key={lang} style={[styles.langOption, language === lang && styles.langOptionActive]} onPress={() => handleSelectLang(lang)}>
-                <View style={styles.langOptionLeft}>
-                  <Text style={styles.langFlag}>{lang === 'Español' ? '🇵🇪' : lang === 'English' ? '🇬🇧' : '🏔️'}</Text>
-                  <View>
-                    <Text style={[styles.langName, language === lang && styles.langNameActive]}>{lang}</Text>
-                    <Text style={styles.langNative}>{lang === 'Español' ? 'Español' : lang === 'English' ? 'English' : 'Runasimi'}</Text>
-                  </View>
-                </View>
-                {language === lang && <Ionicons name="checkmark-circle" size={22} color={C.green} />}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.modalClose} onPress={() => setShowLangModal(false)}>
-              <Text style={styles.modalCloseText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-      <BottomTabBar active="ARView" />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.white },
-  backgroundImage: { height: 280, padding: 20, paddingTop: 50, justifyContent: 'space-between' },
+  backgroundImage: { height: 280, padding: 20, justifyContent: 'space-between' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle: { color: C.white, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
   backButton: { backgroundColor: C.white, padding: 8, borderRadius: 50, elevation: 5 },
@@ -212,3 +134,102 @@ const styles = StyleSheet.create({
   modalClose: { marginTop: 8, padding: 14, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
   modalCloseText: { color: C.muted, fontWeight: '600', fontSize: 15 },
 });
+
+
+  return (
+    <View style={styles.container}>
+      <ImageBackground source={backgroundSource} style={[styles.backgroundImage, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main', { screen: 'ARView' })}>
+            <Ionicons name="arrow-back" size={24} color={C.green} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>InkaVoice</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={24} color={C.white} /></TouchableOpacity>
+        </View>
+        <View style={styles.recognitionBadge}>
+          <Text style={styles.recognitionText}>{t('result_recognition')}</Text>
+        </View>
+      </ImageBackground>
+
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.card}>
+          <View style={styles.badgeLabel}><Text style={styles.badgeText}>{content.region}</Text></View>
+          <Text style={styles.title}>{content.title}</Text>
+
+          {language !== 'Español' && (
+            <View style={styles.activeLangBadge}>
+              <Ionicons name="language-outline" size={13} color={C.green} />
+              <Text style={styles.activeLangText}>{t('result_translated_prefix')} {language}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Audioguia', { nombre: content.title, region: content.region, photoUri })}>
+            <Ionicons name="volume-medium" size={20} color={C.white} />
+            <Text style={styles.primaryButtonText}>{content.btnListen}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowLangModal(true)}>
+            <Ionicons name="language-outline" size={20} color={C.green} />
+            <Text style={styles.secondaryButtonText}>{content.btnTranslate}</Text>
+            <View style={styles.langIndicator}><Text style={styles.langIndicatorText}>{language.toUpperCase()}</Text></View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {translating ? (
+            <View style={styles.translatingBox}>
+              <ActivityIndicator color={C.gold} size="large" />
+              <Text style={styles.translatingText}>{t('result_translating_prefix')} {language}...</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.sectionTitle}>{content.sectionHistory}</Text>
+              <Text style={styles.bodyText}>{content.history1}</Text>
+              <Text style={styles.bodyText}>{content.history2}</Text>
+              <View style={styles.divider} />
+              <View style={styles.curatorCard}>
+                <View style={styles.curatorHeader}>
+                  <Image source={{ uri: 'https://randomuser.me/api/portraits/men/45.jpg' }} style={styles.curatorAvatar} />
+                  <Text style={styles.curatorLabel}>{content.sectionCurator}</Text>
+                </View>
+                <Text style={styles.curatorText}>{content.curator}</Text>
+              </View>
+            </>
+          )}
+          <View style={{ height: 168 }} />
+        </View>
+      </ScrollView>
+
+      <TouchableOpacity style={[styles.micButton, { bottom: micBottom }]} onPress={() => navigation.navigate('Asistente')}>
+        <Ionicons name="mic" size={28} color={C.white} />
+      </TouchableOpacity>
+
+      <Modal visible={showLangModal} transparent animationType="slide">
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowLangModal(false)}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>{t('result_select_language')}</Text>
+            <Text style={styles.modalSub}>{t('result_select_language_sub')}</Text>
+            {LANGUAGES.map(lang => (
+              <TouchableOpacity key={lang} style={[styles.langOption, language === lang && styles.langOptionActive]} onPress={() => handleSelectLang(lang)}>
+                <View style={styles.langOptionLeft}>
+                  <Text style={styles.langFlag}>{lang === 'Español' ? '🇵🇪' : lang === 'English' ? '🇬🇧' : '🏔️'}</Text>
+                  <View>
+                    <Text style={[styles.langName, language === lang && styles.langNameActive]}>{lang}</Text>
+                    <Text style={styles.langNative}>{lang === 'Español' ? 'Español' : lang === 'English' ? 'English' : 'Runasimi'}</Text>
+                  </View>
+                </View>
+                {language === lang && <Ionicons name="checkmark-circle" size={22} color={C.green} />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowLangModal(false)}>
+              <Text style={styles.modalCloseText}>{t('alert_cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+      <BottomTabBar active="ARView" />
+    </View>
+  );
+}
+

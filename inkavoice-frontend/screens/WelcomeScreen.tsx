@@ -13,55 +13,51 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors } from '../theme/colors';
+import { useLanguage } from '../context/LanguageContext';
 import type { RootStackParamList } from '../navigation/types';
+import { useTheme } from '../context/ThemeContext';
 
 type Slide = {
   id: string;
-  title: string;
-  subtitle: string;
-  cardTitle: string;
-  cardDesc: string;
+  titleKey: string;
+  subtitleKey: string;
+  cardTitleKey: string;
+  cardDescKey: string;
   visual: 'camera' | 'voice' | 'routes';
 };
 
 const SLIDES: Slide[] = [
   {
     id: '1',
-    title: 'Inteligencia Cultural en tus manos',
-    subtitle:
-      'Explora el legado del Perú con la tecnología más avanzada de acompañamiento histórico.',
-    cardTitle: 'Reconocimiento con Cámara',
-    cardDesc:
-      'Apunta tu cámara a cualquier huaca o artefacto y nuestra IA identificará instantáneamente su origen, época y significado cultural.',
+    titleKey: 'welcome_slide1_title',
+      subtitleKey: 'welcome_slide1_subtitle',
+    cardTitleKey: 'welcome_slide1_card_title',
+      cardDescKey: 'welcome_slide1_card_desc',
     visual: 'camera',
   },
   {
     id: '2',
-    title: 'Historias que cobran vida',
-    subtitle:
-      'Escucha narraciones inmersivas mientras recorres sitios arqueológicos y monumentos.',
-    cardTitle: 'Guía Inteligente de Voz',
-    cardDesc:
-      'Nuestra IA adapta cada relato a tu idioma, intereses y ubicación para una experiencia única.',
+    titleKey: 'welcome_slide2_title',
+      subtitleKey: 'welcome_slide2_subtitle',
+    cardTitleKey: 'welcome_slide2_card_title',
+      cardDescKey: 'welcome_slide2_card_desc',
     visual: 'voice',
   },
   {
     id: '3',
-    title: 'Rutas hechas para ti',
-    subtitle:
-      'Descubre el Perú con itinerarios personalizados según tus gustos turísticos.',
-    cardTitle: 'Rutas con IA',
-    cardDesc:
-      'Desde la costa hasta la selva, planifica viajes culturales con recomendaciones en tiempo real.',
+    titleKey: 'welcome_slide3_title',
+      subtitleKey: 'welcome_slide3_subtitle',
+    cardTitleKey: 'welcome_slide3_card_title',
+      cardDescKey: 'welcome_slide3_card_desc',
     visual: 'routes',
   },
 ];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-function SlideVisual({ type }: { type: Slide['visual'] }) {
+function SlideVisual({ type, styles }: { type: Slide['visual']; styles: any }) {
   if (type === 'camera') {
+
     return (
       <View style={styles.visualDark}>
         <View style={styles.phoneFrame}>
@@ -106,6 +102,7 @@ function SlideVisual({ type }: { type: Slide['visual'] }) {
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<FlatList<Slide>>(null);
 
@@ -130,65 +127,8 @@ export default function WelcomeScreen() {
   const safeAreaProps =
     Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {};
 
-  return (
-    <Container style={styles.safe} {...safeAreaProps}>
-      <View style={styles.bgDiamond} />
-      <View style={styles.bgCircleOuter} />
-      <View style={styles.bgCircleInner} />
-
-      <FlatList
-        ref={listRef}
-        style={styles.list}
-        data={SLIDES}
-        keyExtractor={(item) => item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumScrollEnd}
-        getItemLayout={(_, index) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * index,
-          index,
-        })}
-        renderItem={({ item }) => (
-          <View style={styles.slide}>
-            <View style={styles.header}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.subtitle}>{item.subtitle}</Text>
-            </View>
-
-            <View style={styles.card}>
-              <SlideVisual type={item.visual} />
-              <Text style={styles.cardTitle}>{item.cardTitle}</Text>
-              <Text style={styles.cardDesc}>{item.cardDesc}</Text>
-            </View>
-          </View>
-        )}
-      />
-
-      <View style={styles.footer}>
-        <View style={styles.dots}>
-          {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[styles.dot, index === activeIndex && styles.dotActive]}
-            />
-          ))}
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.nextBtn, pressed && styles.pressed]}
-          onPress={handleNext}
-        >
-          <Text style={styles.nextBtnText}>{isLast ? 'Comenzar' : 'Siguiente'}</Text>
-          <Text style={styles.nextBtnArrow}>→</Text>
-        </Pressable>
-      </View>
-    </Container>
-  );
-}
-
-const styles = StyleSheet.create({
+    const { colors } = useTheme();
+    const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
@@ -401,3 +341,62 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
 });
+  return (
+    <Container style={styles.safe} {...safeAreaProps}>
+      <View style={styles.bgDiamond} />
+      <View style={styles.bgCircleOuter} />
+      <View style={styles.bgCircleInner} />
+
+      <FlatList
+        ref={listRef}
+        style={styles.list}
+        data={SLIDES}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH,
+          offset: SCREEN_WIDTH * index,
+          index,
+        })}
+        renderItem={({ item }) => (
+          <View style={styles.slide}>
+            <View style={styles.header}>
+              <Text style={styles.title}>{t(item.titleKey)}</Text>
+              <Text style={styles.subtitle}>{t(item.subtitleKey)}</Text>
+            </View>
+
+            <View style={styles.card}>
+              <SlideVisual type={item.visual} styles={styles} />
+              <Text style={styles.cardTitle}>{t(item.cardTitleKey)}</Text>
+              <Text style={styles.cardDesc}>{t(item.cardDescKey)}</Text>
+            </View>
+          </View>
+        )}
+      />
+
+      <View style={styles.footer}>
+        <View style={styles.dots}>
+          {SLIDES.map((_, index) => (
+            <View
+              key={index}
+              style={[styles.dot, index === activeIndex && styles.dotActive]}
+            />
+          ))}
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.nextBtn, pressed && styles.pressed]}
+          onPress={handleNext}
+        >
+          <Text style={styles.nextBtnText}>{isLast ? t('welcome_start') : t('welcome_next')}</Text>
+          <Text style={styles.nextBtnArrow}>→</Text>
+        </Pressable>
+      </View>
+    </Container>
+  );
+}
+
+

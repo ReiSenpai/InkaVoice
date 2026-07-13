@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAudioGuide } from '../context/AudioGuideContext';
 import BottomTabBar from '../components/BottomTabBar';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
-const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
+
 
 const CHAPTER_TEXTS: Record<string, { title: string; desc: string }> = {
   ESPAÑOL: { title: 'La Casa de la Gloria del Sol', desc: 'Descubre cómo estas enormes piedras, algunas con más de 100 toneladas, fueron talladas con tal precisión que ni una hoja de papel puede deslizarse entre ellas. Su diseño refleja los cuatro suyos del Tahuantinsuyo.' },
@@ -13,26 +17,41 @@ const CHAPTER_TEXTS: Record<string, { title: string; desc: string }> = {
   QUECHUA: { title: 'Inti Wasi Hatun Sumaq', desc: 'Kaypi rikusunki imaynatas kay hatun rumikuna, wakin pachaq tunilada nisqamanta astawan, chay chiqap llank\'asqa kasqanta. Mana huk qullqi qullqi chawpipi yaykupuwaqchu.' },
 };
 
+// Imagen de respaldo si se llega a esta pantalla sin foto (navegación directa, testing, etc.)
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=500';
+
 export default function AudioguiaScreen() {
   const navigation = useNavigation<any>();
+  const { alert } = useAlert();
+  const { t } = useLanguage();
   const route = useRoute<any>();
   const params = route.params || {};
+  const insets = useSafeAreaInsets();
 
-  const [isPlaying, setIsPlaying] = useState(false);
   const [language, setLanguage] = useState<'ESPAÑOL' | 'ENGLISH' | 'QUECHUA'>('ESPAÑOL');
-  const [progress, setProgress] = useState(30);
   const [translating, setTranslating] = useState(false);
   const [showTranslated, setShowTranslated] = useState(false);
 
   const chapter = CHAPTER_TEXTS[language];
+  const photoUri: string | undefined = params.photoUri;
+  const coverImageSource = photoUri ? { uri: photoUri } : { uri: FALLBACK_IMAGE };
 
+  // --- Reproductor global (sobrevive a salir de esta pantalla) ---
+  const { isActive, isPlaying, currentTime, duration, togglePlay, skip, loadGuide, stopAndClear } = useAudioGuide();
+
+  // Al entrar a la pantalla, "carga" esta guía en el reproductor global
+  // (si ya estaba sonando la misma, simplemente sigue donde iba).
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isPlaying) {
-      interval = setInterval(() => setProgress(prev => (prev < 100 ? prev + 1 : 0)), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    loadGuide({
+      title: chapter.title,
+      region: params.region || 'Cusco, Capital Imperial',
+      photoUri,
+      nombre: params.nombre,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const handleTranslate = (lang: 'ESPAÑOL' | 'ENGLISH' | 'QUECHUA') => {
     if (lang === language) return;
@@ -42,99 +61,68 @@ export default function AudioguiaScreen() {
       setLanguage(lang);
       setTranslating(false);
       setShowTranslated(true);
+      // TODO (backend/IA): aquí también correspondería cambiar el audio
+      // que se reproduce por la versión en el nuevo idioma cuando esté disponible.
     }, 900);
   };
 
-  const formatTime = (pct: number) => {
-    const total = 765;
-    const current = Math.floor((pct / 100) * total);
-    const m = Math.floor(current / 60).toString().padStart(2, '0');
-    const s = (current % 60).toString().padStart(2, '0');
-    return `${m}:${s} / 12:45`;
+  // Si el audio fue detenido (ej. tocaste la "X" del mini-reproductor),
+  // el botón de play debe volver a cargarlo en vez de solo pausar/reanudar.
+  const handlePlayPress = () => {
+    if (!isActive) {
+      loadGuide({
+        title: chapter.title,
+        region: params.region || 'Cusco, Capital Imperial',
+        photoUri,
+        nombre: params.nombre,
+      });
+      return;
+    }
+    togglePlay();
   };
 
-  return (
-    <View style={{ flex: 1 }}>
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Resultado')}>
-          <Ionicons name="arrow-back" size={22} color={C.green} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>InkaVoice</Text>
-        <TouchableOpacity><Ionicons name="ellipsis-vertical" size={22} color={C.green} /></TouchableOpacity>
-      </View>
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
-      <Text style={styles.location}>{params.region || 'Cusco, Capital Imperial'} · HIGHLANDS REGION</Text>
+  // Al salir de la pantalla (botón atrás propio), si el audio está sonando
+  // preguntamos si seguir escuchando en segundo plano o detenerlo.
+  const handleBackPress = () => {
+    const goBack = () => navigation.navigate('Resultado', photoUri ? { photoUri } : undefined);
 
-      <View style={styles.circleContainer}>
-        <View style={styles.circleOuter}>
-          <View style={styles.imageWrapper}>
-            <Image source={{ uri: 'https://images.unsplash.com/photo-1587595431973-160d0d94add1?q=80&w=500' }} style={styles.coverImage} />
-          </View>
-        </View>
-        <View style={[styles.arcDecor, { borderTopColor: C.goldL, borderRightColor: C.goldL }]} />
-      </View>
+    if (!isPlaying) {
+      goBack();
+      return;
+    }
 
-      <View style={styles.timeBadge}><Text style={styles.timeText}>{formatTime(progress)}</Text></View>
+    alert(
+      t('alert_audio_playing_title'),
+      t('alert_audio_playing_message'),
+      [
+        {
+          text: t('alert_keep_listening'),
+          onPress: () => goBack(),
+        },
+        {
+          text: t('alert_stop'),
+          style: 'destructive',
+          onPress: () => {
+            stopAndClear();
+            goBack();
+          },
+        },
+        { text: t('alert_cancel'), style: 'cancel' },
+      ],
+    );
+  };
 
-      <View style={styles.languageContainer}>
-        {(['ESPAÑOL', 'ENGLISH', 'QUECHUA'] as const).map(lang => (
-          <TouchableOpacity key={lang} style={[styles.langBtn, language === lang && styles.langBtnActive]} onPress={() => handleTranslate(lang)}>
-            <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+  const { colors } = useTheme();
+  const C = { bg: colors.background, dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.white, muted: colors.muted, card: colors.beige };
 
-      <View style={styles.controls}>
-        <TouchableOpacity onPress={() => setProgress(p => Math.max(0, p - 10))}>
-          <Ionicons name="play-skip-back" size={28} color={C.gold} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.playButton} onPress={() => setIsPlaying(!isPlaying)}>
-          <Ionicons name={isPlaying ? 'pause' : 'play'} size={36} color={C.white} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setProgress(p => Math.min(100, p + 10))}>
-          <Ionicons name="play-skip-forward" size={28} color={C.gold} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View>
-
-      <View style={styles.chapterCard}>
-        <View style={styles.chapterHeader}>
-          <Text style={styles.chapterLabel}>CAPÍTULO ACTUAL</Text>
-          <Ionicons name="headset-outline" size={20} color={C.gold} />
-        </View>
-        {translating ? (
-          <View style={styles.translatingRow}>
-            <ActivityIndicator color={C.gold} />
-            <Text style={styles.translatingText}>Traduciendo al {language}...</Text>
-          </View>
-        ) : (
-          <>
-            {showTranslated && (
-              <View style={styles.translatedBadge}>
-                <Ionicons name="language-outline" size={13} color={C.green} />
-                <Text style={styles.translatedBadgeText}>Traducido · {language}</Text>
-              </View>
-            )}
-            <Text style={styles.chapterTitle}>{chapter.title}</Text>
-            <Text style={styles.chapterDesc}>{chapter.desc}</Text>
-          </>
-        )}
-        <View style={styles.chapterProgressTrack}>
-          <View style={[styles.chapterProgressFill, { width: `${progress}%` }]} />
-          <View style={[styles.chapterProgressDot, { left: `${progress}%` }]} />
-        </View>
-      </View>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
-      <BottomTabBar active="Discover" />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 50 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: C.green },
@@ -168,3 +156,88 @@ const styles = StyleSheet.create({
   chapterProgressFill: { height: '100%', backgroundColor: C.goldL, borderRadius: 2 },
   chapterProgressDot: { position: 'absolute', top: -4, width: 12, height: 12, borderRadius: 6, backgroundColor: C.gold, marginLeft: -6 },
 });
+
+
+  return (
+    <View style={{ flex: 1 }}>
+    <ScrollView style={[styles.container, { paddingTop: insets.top + 12 }]} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBackPress}>
+          <Ionicons name="arrow-back" size={22} color={C.green} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>InkaVoice</Text>
+        <TouchableOpacity><Ionicons name="ellipsis-vertical" size={22} color={C.green} /></TouchableOpacity>
+      </View>
+
+      <Text style={styles.location}>{params.region || t('audio_default_location')} · {t('audio_region_highlands')}</Text>
+
+      <View style={styles.circleContainer}>
+        <View style={styles.circleOuter}>
+          <View style={styles.imageWrapper}>
+            <Image source={coverImageSource} style={styles.coverImage} />
+          </View>
+        </View>
+        <View style={[styles.arcDecor, { borderTopColor: C.goldL, borderRightColor: C.goldL }]} />
+      </View>
+
+      <View style={styles.timeBadge}>
+        <Text style={styles.timeText}>{formatTime(currentTime)} / {formatTime(duration)}</Text>
+      </View>
+
+      <View style={styles.languageContainer}>
+        {(['ESPAÑOL', 'ENGLISH', 'QUECHUA'] as const).map(lang => (
+          <TouchableOpacity key={lang} style={[styles.langBtn, language === lang && styles.langBtnActive]} onPress={() => handleTranslate(lang)}>
+            <Text style={[styles.langText, language === lang && styles.langTextActive]}>{lang}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity onPress={() => skip(-10)}>
+          <Ionicons name="play-skip-back" size={28} color={C.gold} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.playButton} onPress={handlePlayPress}>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={36} color={C.white} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => skip(10)}>
+          <Ionicons name="play-skip-forward" size={28} color={C.gold} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progressPct}%` }]} /></View>
+
+      <View style={styles.chapterCard}>
+        <View style={styles.chapterHeader}>
+          <Text style={styles.chapterLabel}>{t('audio_chapter_current')}</Text>
+          <Ionicons name="headset-outline" size={20} color={C.gold} />
+        </View>
+        {translating ? (
+          <View style={styles.translatingRow}>
+            <ActivityIndicator color={C.gold} />
+            <Text style={styles.translatingText}>{t('audio_translating_prefix')} {language}...</Text>
+          </View>
+        ) : (
+          <>
+            {showTranslated && (
+              <View style={styles.translatedBadge}>
+                <Ionicons name="language-outline" size={13} color={C.green} />
+                <Text style={styles.translatedBadgeText}>{t('audio_translated_prefix')} {language}</Text>
+              </View>
+            )}
+            <Text style={styles.chapterTitle}>{chapter.title}</Text>
+            <Text style={styles.chapterDesc}>{chapter.desc}</Text>
+          </>
+        )}
+        <View style={styles.chapterProgressTrack}>
+          <View style={[styles.chapterProgressFill, { width: `${progressPct}%` }]} />
+          <View style={[styles.chapterProgressDot, { left: `${progressPct}%` }]} />
+        </View>
+      </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+      <BottomTabBar active="Discover" />
+    </View>
+  );
+}
+

@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
 const TABS: { key: string; label: string; active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'Home', label: 'Inicio', active: 'home', inactive: 'home-outline' },
@@ -15,32 +16,15 @@ const TABS: { key: string; label: string; active: keyof typeof Ionicons.glyphMap
 
 export default function BottomTabBar({ active }: { active?: string }) {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
 
-  return (
-    <View style={styles.bar}>
-      {TABS.map(tab => {
-        const focused = tab.key === active;
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.item, focused && styles.itemActive]}
-            onPress={() => navigation.navigate('Main', { screen: tab.key })}
-          >
-            <Ionicons name={focused ? tab.active : tab.inactive} size={22} color={focused ? colors.green : colors.gray500} />
-            <Text style={[styles.label, { color: focused ? colors.green : colors.gray500 }]}>{tab.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
+  const { colors } = useTheme();
 
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    height: 68,
     paddingTop: 6,
-    paddingBottom: 8,
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.gray100,
@@ -62,3 +46,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+
+
+  return (
+    <View style={[styles.bar, { height: 56 + bottomPad, paddingBottom: bottomPad }]}>
+      {TABS.map(tab => {
+        const focused = tab.key === active;
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.item, focused && styles.itemActive]}
+            onPress={() => navigation.navigate('Main', { screen: tab.key })}
+          >
+            <Ionicons name={focused ? tab.active : tab.inactive} size={22} color={focused ? colors.green : colors.gray500} />
+            <Text style={[styles.label, { color: focused ? colors.green : colors.gray500 }]}>{tab.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+

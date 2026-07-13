@@ -20,6 +20,7 @@ export const lightColors = {
   badgeYellow: '#e8c547',
 };
 export const darkColors = {
+  textPrimary: '#f5f5f5',
   green: '#4ade80',
   greenDark: '#12261c',
   gold: '#c4a962',

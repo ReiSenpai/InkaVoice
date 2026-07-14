@@ -6,6 +6,10 @@ import * as Location from 'expo-location';
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAudioGuide } from '../context/AudioGuideContext';
+import { useTour } from '../context/TourContext';
+import { MINI_PLAYER_HEIGHT, MINI_PLAYER_GAP } from '../components/MiniAudioPlayer';
+import { MINI_TOUR_BAR_HEIGHT, MINI_TOUR_BAR_GAP } from '../components/MiniTourBar';
 
 const C = { bg: colors.background, white: colors.white, green: colors.green, green2: colors.greenDark, gold: colors.gold, border: colors.border, text: colors.greenDark, muted: colors.muted };
 
@@ -17,8 +21,8 @@ const PERU_REGION: Region = {
   longitudeDelta: 12,
 };
 
-type ZoneKey = 'costa' | 'sierra' | 'selva';
-type Category = 'arqueologico' | 'natural' | 'colonial';
+export type ZoneKey = 'costa' | 'sierra' | 'selva';
+export type Category = 'arqueologico' | 'natural' | 'colonial';
 
 // Encuadres aproximados para centrar el mapa al elegir cada región
 const ZONE_REGIONS: Record<ZoneKey, Region> = {
@@ -39,7 +43,7 @@ const CATEGORY_ICON: Record<Category, keyof typeof Ionicons.glyphMap> = {
   colonial: 'home',
 };
 
-type Site = {
+export type Site = {
   id: number;
   name: string;
   zone: ZoneKey;
@@ -51,7 +55,8 @@ type Site = {
 };
 
 // Lista ampliada: principales zonas arqueológicas y turísticas del Perú por región
-const SITES: Site[] = [
+// Exportada para reutilizarla en RecorridoScreen y armar recorridos reales con coordenadas.
+export const SITES: Site[] = [
   // COSTA
   { id: 1, name: 'Chan Chan', zone: 'costa', category: 'arqueologico', latitude: -8.1116, longitude: -79.0744, shortDesc: 'La ciudad de barro más grande de América precolombina, capital del reino Chimú.', image: 'https://images.unsplash.com/photo-1580619305218-8423a7ef79b4' },
   { id: 2, name: 'Líneas de Nazca', zone: 'costa', category: 'arqueologico', latitude: -14.7391, longitude: -75.13, shortDesc: 'Geoglifos milenarios visibles solo desde el aire, patrimonio de la humanidad.', image: 'https://images.unsplash.com/photo-1531065208531-4036c0dba3ca' },
@@ -86,6 +91,12 @@ const ROUTES: Record<ZoneKey, { id: number; name: string; km: string; desc: stri
   ],
 };
 
+const ZONE_LABEL: Record<ZoneKey, string> = { costa: 'Costa', sierra: 'Sierra', selva: 'Selva' };
+
+// Máximo de paradas al armar un recorrido de toda una zona (o de todo el Perú)
+// para que no sea eterno caminar/manejar entre todas.
+const MAX_STOPS_PER_TOUR = 6;
+
 export default function MapaScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -94,6 +105,17 @@ export default function MapaScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<number | null>(null);
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const [showSites, setShowSites] = useState(true);
+  const [showRoutesPanel, setShowRoutesPanel] = useState(true);
+
+  // Si el mini-reproductor está visible abajo, subimos las tarjetas propias
+  // de esta pantalla para que no se solapen.
+  const { isActive: isAudioActive } = useAudioGuide();
+  const { startTour, isActive: isTourActive } = useTour();
+  const extraBottomSpace = isAudioActive ? MINI_PLAYER_HEIGHT + MINI_PLAYER_GAP * 2 : 0;
+  // Espacio extra arriba mientras la mini barra "Recorrido en curso" está visible,
+  // para que no tape el header ni los botones flotantes del mapa.
+  const extraTopSpace = isTourActive ? MINI_TOUR_BAR_HEIGHT + MINI_TOUR_BAR_GAP : 0;
 
   useEffect(() => {
     (async () => {
@@ -138,12 +160,52 @@ export default function MapaScreen() {
     mapRef.current?.animateToRegion({ latitude: site.latitude, longitude: site.longitude, latitudeDelta: 1.5, longitudeDelta: 1.5 }, 500);
   };
 
+  // Confirma si ya hay un recorrido activo antes de arrancar uno nuevo (evita perder el progreso sin avisar)
+  const confirmAndStart = (onConfirm: () => void) => {
+    if (isTourActive) {
+      Alert.alert(
+        'Ya tienes un recorrido en curso',
+        '¿Quieres terminarlo y empezar uno nuevo?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Empezar nuevo', style: 'destructive', onPress: onConfirm },
+        ]
+      );
+      return;
+    }
+    onConfirm();
+  };
+
+  // "Iniciar Ruta" desde la tarjeta de un sitio puntual: arranca un recorrido de una sola parada
+  const handleStartRoute = (site: Site) => {
+    confirmAndStart(() => {
+      startTour({ routeName: site.name, region: ZONE_LABEL[site.zone], stops: [site] });
+      navigation.navigate('RecorridoEnCurso');
+    });
+  };
+
+  // "Iniciar Nuevo Recorrido" desde el panel inferior: arranca un recorrido con varios sitios de la zona activa
+  // (o de todo el Perú si no hay zona seleccionada), en el orden del mapa.
+  const handleStartZoneTour = () => {
+    const pool = activeZone ? SITES.filter((s) => s.zone === activeZone) : SITES;
+    const stops = pool.slice(0, MAX_STOPS_PER_TOUR);
+    if (!stops.length) return;
+    confirmAndStart(() => {
+      startTour({
+        routeName: activeZone ? `Recorrido por la ${ZONE_LABEL[activeZone]}` : 'Recorrido por el Perú',
+        region: activeZone ? ZONE_LABEL[activeZone] : undefined,
+        stops,
+      });
+      navigation.navigate('RecorridoEnCurso');
+    });
+  };
+
   const visibleRoutes = activeZone ? ROUTES[activeZone] : [...ROUTES.costa, ...ROUTES.sierra, ...ROUTES.selva];
-  const visibleSites = activeZone ? SITES.filter(s => s.zone === activeZone) : SITES;
+  const visibleSites = showSites ? (activeZone ? SITES.filter(s => s.zone === activeZone) : SITES) : [];
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 + extraTopSpace }]}>
         <TouchableOpacity onPress={() => {}}>
           <Ionicons name="search-outline" size={22} color={C.green} />
         </TouchableOpacity>
@@ -198,18 +260,30 @@ export default function MapaScreen() {
           })}
         </MapView>
 
-        <View style={styles.rightButtons}>
+        <View style={[styles.rightButtons, { top: 20 + extraTopSpace }]}>
           <TouchableOpacity style={styles.floatBtn} onPress={goToMyLocation}>
             <Ionicons name="locate" size={20} color={C.green} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.floatBtn, !showSites && styles.floatBtnActive]}
+            onPress={() => { setShowSites(prev => !prev); setSelectedSite(null); }}
+          >
+            <Ionicons name={showSites ? 'eye-outline' : 'eye-off-outline'} size={20} color={showSites ? C.green : '#FFF'} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.floatBtn} onPress={() => { setActiveZone(null); setSelectedSite(null); mapRef.current?.animateToRegion(PERU_REGION, 600); }}>
             <Ionicons name="layers-outline" size={20} color={C.green} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.floatBtn, !showRoutesPanel && styles.floatBtnActive]}
+            onPress={() => setShowRoutesPanel(prev => !prev)}
+          >
+            <Ionicons name={showRoutesPanel ? 'chevron-down' : 'chevron-up'} size={20} color={showRoutesPanel ? C.green : '#FFF'} />
           </TouchableOpacity>
         </View>
       </View>
 
       {selectedSite ? (
-        <View style={styles.siteCard}>
+        <View style={[styles.siteCard, { bottom: 25 + extraBottomSpace }]}>
           <TouchableOpacity style={styles.siteCardClose} onPress={() => setSelectedSite(null)}>
             <Ionicons name="close" size={16} color="#FFF" />
           </TouchableOpacity>
@@ -221,17 +295,29 @@ export default function MapaScreen() {
             </View>
             <Text style={styles.siteCardTitle}>{selectedSite.name}</Text>
             <Text style={styles.siteCardDesc} numberOfLines={2}>{selectedSite.shortDesc}</Text>
-            <TouchableOpacity
-              style={styles.siteCardBtn}
-              onPress={() => navigation.navigate('Resultado', { siteName: selectedSite.name })}
-            >
-              <Text style={styles.siteCardBtnText}>Ver detalles</Text>
-              <Ionicons name="arrow-forward" size={16} color="#FFF" />
-            </TouchableOpacity>
+            <View style={styles.siteCardBtnRow}>
+              <TouchableOpacity
+                style={styles.siteCardBtn}
+                onPress={() => navigation.navigate('Asistente', { siteName: selectedSite.name })}
+              >
+                <Text style={styles.siteCardBtnText}>Ver detalles</Text>
+                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.siteCardBtnOutline}
+                onPress={() => handleStartRoute(selectedSite)}
+              >
+                <Ionicons name="navigate" size={15} color={C.green} />
+                <Text style={styles.siteCardBtnOutlineText}>Iniciar Ruta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      ) : (
-        <View style={styles.bottomCard}>
+      ) : showRoutesPanel ? (
+        <View style={[styles.bottomCard, { bottom: 25 + extraBottomSpace }]}>
+          <TouchableOpacity style={styles.collapseHandle} onPress={() => setShowRoutesPanel(false)}>
+            <View style={styles.collapseHandleBar} />
+          </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {visibleRoutes.map(route => (
               <TouchableOpacity key={route.id} onPress={() => setSelectedRoute(route.id)} style={[styles.card, selectedRoute === route.id && styles.cardSelected]}>
@@ -243,14 +329,19 @@ export default function MapaScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <TouchableOpacity
-            style={styles.startBtn}
-            onPress={() => navigation.navigate('Routes', selectedRoute ? { routeId: selectedRoute } : undefined)}
-          >
+          <TouchableOpacity style={styles.startBtn} onPress={handleStartZoneTour}>
             <Ionicons name="add-circle" size={22} color="#FFF" />
             <Text style={styles.startText}>Iniciar Nuevo Recorrido</Text>
           </TouchableOpacity>
         </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.reopenPill, { bottom: 25 + extraBottomSpace }]}
+          onPress={() => setShowRoutesPanel(true)}
+        >
+          <Ionicons name="map" size={16} color="#FFF" />
+          <Text style={styles.reopenPillText}>Ver rutas</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -270,7 +361,12 @@ const styles = StyleSheet.create({
   pinCircleActive: { borderColor: C.gold, borderWidth: 3, transform: [{ scale: 1.15 }] },
   rightButtons: { position: 'absolute', right: 32, top: 20, gap: 14 },
   floatBtn: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  bottomCard: { position: 'absolute', bottom: 25, left: 0, right: 0 },
+  floatBtnActive: { backgroundColor: C.green },
+  bottomCard: { position: 'absolute', left: 0, right: 0 },
+  collapseHandle: { alignItems: 'center', paddingVertical: 6 },
+  collapseHandleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#DDD' },
+  reopenPill: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.green, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, elevation: 6 },
+  reopenPillText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
   card: { width: 260, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' },
   cardSelected: { borderWidth: 2, borderColor: C.green },
   cardImg: { width: '100%', height: 150 },
@@ -280,7 +376,7 @@ const styles = StyleSheet.create({
   startBtn: { alignSelf: 'center', marginTop: 18, height: 58, paddingHorizontal: 24, borderRadius: 30, backgroundColor: C.green, flexDirection: 'row', alignItems: 'center', gap: 10 },
   startText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 
-  siteCard: { position: 'absolute', bottom: 25, left: 18, right: 18, backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', overflow: 'hidden', elevation: 8 },
+  siteCard: { position: 'absolute', left: 18, right: 18, backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', overflow: 'hidden', elevation: 8 },
   siteCardClose: { position: 'absolute', top: 8, right: 8, zIndex: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   siteCardImg: { width: 110, height: '100%' },
   siteCardBody: { flex: 1, padding: 14, gap: 4 },
@@ -288,6 +384,9 @@ const styles = StyleSheet.create({
   siteCardBadgeText: { fontSize: 10, fontWeight: '800', color: C.green },
   siteCardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
   siteCardDesc: { fontSize: 12, color: C.muted, lineHeight: 16 },
-  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.green, borderRadius: 10, paddingVertical: 8, marginTop: 6, alignSelf: 'flex-start', paddingHorizontal: 14 },
+  siteCardBtnRow: { gap: 6, marginTop: 4 },
+  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.green, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
   siteCardBtnText: { color: '#FFF', fontWeight: '700', fontSize: 12 },
+  siteCardBtnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1.5, borderColor: C.green },
+  siteCardBtnOutlineText: { color: C.green, fontWeight: '700', fontSize: 12 },
 });

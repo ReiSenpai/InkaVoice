@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
+
 const TAB_BAR_HEIGHT = 72;
 
 const CATEGORIES = ['Todo', 'Costa', 'Sierra', 'Selva'];

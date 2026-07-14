@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   useAudioRecorder,
   useAudioRecorderState,
@@ -20,9 +20,11 @@ const C = {
 
 type Message = { id: number; text: string; sender: 'ai' | 'user' };
 
-const INITIAL: Message[] = [
-  { id: 1, sender: 'ai', text: '¡Hola! Soy tu guía InkaVoice.\nHoy estamos cerca de Sacsayhuamán. ¿Te gustaría conocer la historia de las piedras talladas o prefieres que te guíe a un mirador cercano?' },
-];
+const DEFAULT_INITIAL: Message = {
+  id: 1,
+  sender: 'ai',
+  text: '¡Hola! Soy tu guía InkaVoice.\nHoy estamos cerca de Sacsayhuamán. ¿Te gustaría conocer la historia de las piedras talladas o prefieres que te guíe a un mirador cercano?',
+};
 
 const SUGGESTIONS = ['¿Cómo llego desde aquí?', 'Dónde comer cerca', 'Historia de los Incas', 'Ruta Inca Trail'];
 
@@ -52,10 +54,24 @@ function WaveBar({ delay, color, active }: { delay: number; color: string; activ
 
 export default function AsistenteScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const siteName: string | undefined = route.params?.siteName;
+
   const scrollRef = useRef<ScrollView>(null);
   const micPulse = useRef(new Animated.Value(1)).current;
-  const [messages, setMessages] = useState<Message[]>(INITIAL);
+
+  // Si venimos de un sitio del mapa, el saludo inicial se personaliza con ese lugar.
+  const initialMessage: Message = siteName
+    ? {
+        id: 1,
+        sender: 'ai',
+        text: `¡Hola! Soy tu guía InkaVoice.\nVeo que quieres saber más sobre ${siteName}. Dame un momento y te cuento. ✨`,
+      }
+    : DEFAULT_INITIAL;
+
+  const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [isTyping, setIsTyping] = useState(false);
+  const hasAutoAskedRef = useRef(false);
 
   // --- Grabación de audio real (expo-audio) ---
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -74,18 +90,41 @@ export default function AsistenteScreen() {
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
+  // TODO (backend/IA de tu compañero): esta función arma la respuesta.
+  // Por ahora usa AI_REPLIES para las sugerencias fijas, y para preguntas
+  // libres (como "Cuéntame sobre {siteName}") cae en un texto genérico.
+  // Cuando el backend esté listo, reemplazar por una llamada real que le
+  // pase el texto del usuario (y opcionalmente `siteName`) al modelo de IA.
+  const getAiReply = (userText: string): string => {
+    if (AI_REPLIES[userText]) return AI_REPLIES[userText];
+    if (siteName && userText.toLowerCase().includes(siteName.toLowerCase())) {
+      return `${siteName} es uno de los lugares más fascinantes del Perú. (Aquí se conectará la información real generada por la IA: historia, datos curiosos y recomendaciones para visitarlo) 🏛️`;
+    }
+    return 'Todavía no tengo información específica sobre eso.';
+  };
+
   const sendMessage = (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text }]);
     setIsTyping(true);
     scrollToBottom();
     setTimeout(() => {
-      const reply = AI_REPLIES[text] ?? 'Todavía no tengo información específica sobre eso.';
+      const reply = getAiReply(text);
       setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: reply }]);
       setIsTyping(false);
       scrollToBottom();
     }, 1000);
   };
+
+  // Si llegamos con un sitio seleccionado desde el mapa, preguntamos
+  // automáticamente por él apenas se abre la pantalla.
+  useEffect(() => {
+    if (siteName && !hasAutoAskedRef.current) {
+      hasAutoAskedRef.current = true;
+      setTimeout(() => sendMessage(`Cuéntame sobre ${siteName}`), 500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteName]);
 
   // Se llama cuando termina de grabar y ya tenemos el audio listo (uri local del archivo)
   const handleRecordedAudio = async (uri: string) => {
@@ -97,40 +136,52 @@ export default function AsistenteScreen() {
 
     try {
       // ============================================================
-      // TODO (backend/IA): reemplazar este bloque por la llamada real.
-      // `uri` es la ruta local del archivo de audio grabado (.m4a / .caf según plataforma).
+      // Transcripción real del audio grabado usando la API de
+      // OpenAI Whisper (funciona 100% en Expo Go: es solo un fetch,
+      // no requiere módulo nativo). Si tu compañero usa otro proveedor
+      // (Google Speech-to-Text, AssemblyAI, un backend propio, etc.)
+      // solo tiene que cambiar la URL y el formato de la petición/respuesta.
       //
-      // Flujo esperado:
-      // 1. Subir/enviar el audio en `uri` al backend (ej. FormData con fetch,
-      //    o convertir a base64 si el backend lo requiere así).
-      // 2. El backend transcribe el audio (speech-to-text) y genera la
-      //    respuesta de la IA (texto, y opcionalmente audio de respuesta).
-      // 3. Reemplazar el mensaje placeholder de abajo con la transcripción real
-      //    del usuario, y agregar la respuesta real de la IA al chat.
-      //
-      // Ejemplo de request (ajustar a la API real):
-      //
-      // const formData = new FormData();
-      // formData.append('audio', {
-      //   uri,
-      //   name: 'nota-de-voz.m4a',
-      //   type: 'audio/m4a',
-      // } as any);
-      //
-      // const response = await fetch('https://TU_BACKEND/api/asistente', {
-      //   method: 'POST',
-      //   body: formData,
-      //   headers: { 'Content-Type': 'multipart/form-data' },
-      // });
-      // const data = await response.json();
-      // const userTranscription = data.transcription;
-      // const aiReplyText = data.reply;
+      // ⚠️ IMPORTANTE: no dejes la API key hardcodeada así en producción.
+      // Lo correcto es que este fetch le pegue a TU backend (el que
+      // hará tu compañero), y sea el backend el que le pegue a OpenAI
+      // guardando la key de forma segura del lado del servidor.
       // ============================================================
 
-      // --- Simulación temporal mientras se conecta el backend real ---
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      const userTranscription = '¿Qué puedo visitar cerca de Sacsayhuamán?';
-      const aiReplyText = 'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨';
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: 'nota-de-voz.m4a',
+        type: 'audio/m4a',
+      } as any);
+      formData.append('model', 'whisper-1');
+      formData.append('language', 'es');
+
+      const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          // TODO: reemplazar por la key real (idealmente vía backend propio, no aquí)
+          Authorization: 'Bearer TU_OPENAI_API_KEY',
+        },
+        body: formData,
+      });
+
+      if (!transcriptionResponse.ok) {
+        throw new Error('Fallo la transcripción');
+      }
+
+      const transcriptionData = await transcriptionResponse.json();
+      const userTranscription: string = transcriptionData.text?.trim() || '(no se entendió el audio)';
+
+      // ============================================================
+      // TODO (backend/IA de tu compañero): con `userTranscription` ya
+      // tenemos el texto real de lo que dijo el usuario. Ahora hay que
+      // mandarlo al backend/modelo de IA para obtener la respuesta.
+      // ============================================================
+
+      // --- Simulación temporal de la respuesta de la IA mientras se conecta el backend ---
+      await new Promise(resolve => setTimeout(resolve, 600));
+      const aiReplyText = getAiReply(userTranscription);
       // --- Fin de simulación ---
 
       setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: userTranscription } : m)));
@@ -180,7 +231,7 @@ export default function AsistenteScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topNav}>
-        <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.navigate('Resultado')}>
+        <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={C.greenD} />
         </TouchableOpacity>
         <Text style={styles.brandName}>InkaVoice</Text>

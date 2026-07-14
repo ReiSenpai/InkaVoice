@@ -4,17 +4,19 @@ import { StatusBar } from 'expo-status-bar';
 import AppNavigator from './navigation/AppNavigator';
 import { UserProvider } from './context/UserContext';
 import { AudioGuideProvider } from './context/AudioGuideContext';
- 
+import { TourProvider } from './context/TourContext';
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <UserProvider>
         <AudioGuideProvider>
-          <AppNavigator />
+          <TourProvider>
+            <AppNavigator />
+          </TourProvider>
         </AudioGuideProvider>
       </UserProvider>
     </SafeAreaProvider>
   );
 }
- 

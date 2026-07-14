@@ -27,6 +27,10 @@ export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(false);
 
   const handleItemPress = (item: SettingItem) => {
+    if (item.id === 'sos') {
+      navigation.navigate('Emergencia');
+      return;
+    }
     Alert.alert(item.title, item.subtitle);
   };
 

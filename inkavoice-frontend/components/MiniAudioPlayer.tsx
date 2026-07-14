@@ -10,9 +10,12 @@ const C = { green: colors.green, gold: colors.gold, white: colors.white, muted: 
 // Pantalla donde ya se ve el reproductor completo: ahí no lo duplicamos.
 const HIDDEN_ON_ROUTES = ['Audioguia'];
 
-// Pantallas con controles propios pegados abajo (cámara, mapa): en vez de
-// ocultarlo, lo mostramos arriba (debajo de su header) para no taparlos.
-const TOP_POSITION_ROUTES = ['ARView', 'Routes'];
+// Altura aproximada del mini-reproductor + el margen que deja por encima
+// de la tab bar. Otras pantallas (Cámara, Mapa, etc.) importan esta
+// constante para subir sus propios botones/tarjetas de abajo cuando el
+// audio está activo, en vez de que este componente adivine dónde ponerse.
+export const MINI_PLAYER_HEIGHT = 64;
+export const MINI_PLAYER_GAP = 8;
 
 type Props = {
   currentRouteName?: string;
@@ -26,19 +29,17 @@ export default function MiniAudioPlayer({ currentRouteName, onExpand }: Props) {
   if (!isActive || !meta) return null;
   if (currentRouteName && HIDDEN_ON_ROUTES.includes(currentRouteName)) return null;
 
-  const usesTopPosition = !!currentRouteName && TOP_POSITION_ROUTES.includes(currentRouteName);
-
-  // Misma fórmula de altura que usa BottomTabBar (56 + paddingBottom seguro) + margen
+  // Misma fórmula de altura que usa BottomTabBar (56 + paddingBottom seguro) + margen.
+  // Si una pantalla no tiene BottomTabBar (ej. Cámara, Mapa), el mini-reproductor
+  // igual queda pegado abajo del todo con un margen razonable.
   const tabBarHeight = 56 + Math.max(insets.bottom, 8);
-  const bottomOffset = tabBarHeight + 8;
-  // Debajo del header propio de Cámara/Mapa (appName + tabs de región, etc.)
-  const topOffset = insets.top + 108;
+  const bottomOffset = tabBarHeight + MINI_PLAYER_GAP;
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <TouchableOpacity
-      style={[styles.container, usesTopPosition ? { top: topOffset } : { bottom: bottomOffset }]}
+      style={[styles.container, { bottom: bottomOffset }]}
       activeOpacity={0.9}
       onPress={() => onExpand({ nombre: meta.nombre, region: meta.region, photoUri: meta.photoUri })}
     >

@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Pla
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { colors } from '../theme/colors';
+import { useLanguage } from '../context/LanguageContext';
+import { useAlert } from '../context/AlertContext';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAudioGuide } from '../context/AudioGuideContext';
 import { useTour } from '../context/TourContext';
 import { MINI_PLAYER_HEIGHT, MINI_PLAYER_GAP } from '../components/MiniAudioPlayer';
 import { MINI_TOUR_BAR_HEIGHT, MINI_TOUR_BAR_GAP } from '../components/MiniTourBar';
-
-const C = { bg: colors.background, white: colors.white, green: colors.green, green2: colors.greenDark, gold: colors.gold, border: colors.border, text: colors.greenDark, muted: colors.muted };
+import { useTheme } from '../context/ThemeContext';
 
 // Vista inicial: todo el Perú
 const PERU_REGION: Region = {
@@ -31,10 +31,10 @@ const ZONE_REGIONS: Record<ZoneKey, Region> = {
   selva: { latitude: -6.5, longitude: -74.5, latitudeDelta: 8, longitudeDelta: 8 },
 };
 
-const ZONES: { key: ZoneKey; label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { key: 'costa', label: 'Costa', icon: 'water', color: '#F4D03F' },
-  { key: 'sierra', label: 'Sierra', icon: 'triangle', color: '#8D6E63' },
-  { key: 'selva', label: 'Selva', icon: 'leaf', color: '#2E7D32' },
+const ZONES: { key: ZoneKey; labelKey: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
+  { key: 'costa', labelKey: 'category_coast', icon: 'water', color: '#F4D03F' },
+  { key: 'sierra', labelKey: 'category_highlands', icon: 'triangle', color: '#8D6E63' },
+  { key: 'selva', labelKey: 'category_jungle', icon: 'leaf', color: '#2E7D32' },
 ];
 
 const CATEGORY_ICON: Record<Category, keyof typeof Ionicons.glyphMap> = {
@@ -55,7 +55,6 @@ export type Site = {
 };
 
 // Lista ampliada: principales zonas arqueológicas y turísticas del Perú por región
-// Exportada para reutilizarla en RecorridoScreen y armar recorridos reales con coordenadas.
 export const SITES: Site[] = [
   // COSTA
   { id: 1, name: 'Chan Chan', zone: 'costa', category: 'arqueologico', latitude: -8.1116, longitude: -79.0744, shortDesc: 'La ciudad de barro más grande de América precolombina, capital del reino Chimú.', image: 'https://images.unsplash.com/photo-1580619305218-8423a7ef79b4' },
@@ -93,13 +92,15 @@ const ROUTES: Record<ZoneKey, { id: number; name: string; km: string; desc: stri
 
 const ZONE_LABEL: Record<ZoneKey, string> = { costa: 'Costa', sierra: 'Sierra', selva: 'Selva' };
 
-// Máximo de paradas al armar un recorrido de toda una zona (o de todo el Perú)
-// para que no sea eterno caminar/manejar entre todas.
 const MAX_STOPS_PER_TOUR = 6;
 
 export default function MapaScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const { alert } = useAlert();
+  const { colors } = useTheme();
+
   const mapRef = useRef<MapView>(null);
   const [activeZone, setActiveZone] = useState<ZoneKey | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -108,13 +109,21 @@ export default function MapaScreen() {
   const [showSites, setShowSites] = useState(true);
   const [showRoutesPanel, setShowRoutesPanel] = useState(true);
 
-  // Si el mini-reproductor está visible abajo, subimos las tarjetas propias
-  // de esta pantalla para que no se solapen.
+  // Colores dinámicos del tema
+  const C = {
+    bg: colors.background,
+    white: colors.white,
+    green: colors.green,
+    green2: colors.greenDark,
+    gold: colors.gold,
+    border: colors.border,
+    text: colors.greenDark,
+    muted: colors.muted,
+  };
+
   const { isActive: isAudioActive } = useAudioGuide();
   const { startTour, isActive: isTourActive } = useTour();
   const extraBottomSpace = isAudioActive ? MINI_PLAYER_HEIGHT + MINI_PLAYER_GAP * 2 : 0;
-  // Espacio extra arriba mientras la mini barra "Recorrido en curso" está visible,
-  // para que no tape el header ni los botones flotantes del mapa.
   const extraTopSpace = isTourActive ? MINI_TOUR_BAR_HEIGHT + MINI_TOUR_BAR_GAP : 0;
 
   useEffect(() => {
@@ -127,7 +136,7 @@ export default function MapaScreen() {
         const position = await Location.getCurrentPositionAsync({});
         setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
       } catch (e) {
-        // Sin ubicación disponible, se mantiene la vista general del Perú
+        // Sin ubicación disponible
       }
     })();
   }, []);
@@ -143,7 +152,7 @@ export default function MapaScreen() {
     if (!userLocation) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso necesario', 'Necesitamos acceso a tu ubicación para mostrarla en el mapa.');
+        alert(t('map_permission_title'), t('map_permission_message'));
         return;
       }
       const position = await Location.getCurrentPositionAsync({});
@@ -160,7 +169,6 @@ export default function MapaScreen() {
     mapRef.current?.animateToRegion({ latitude: site.latitude, longitude: site.longitude, latitudeDelta: 1.5, longitudeDelta: 1.5 }, 500);
   };
 
-  // Confirma si ya hay un recorrido activo antes de arrancar uno nuevo (evita perder el progreso sin avisar)
   const confirmAndStart = (onConfirm: () => void) => {
     if (isTourActive) {
       Alert.alert(
@@ -176,7 +184,6 @@ export default function MapaScreen() {
     onConfirm();
   };
 
-  // "Iniciar Ruta" desde la tarjeta de un sitio puntual: arranca un recorrido de una sola parada
   const handleStartRoute = (site: Site) => {
     confirmAndStart(() => {
       startTour({ routeName: site.name, region: ZONE_LABEL[site.zone], stops: [site] });
@@ -184,8 +191,6 @@ export default function MapaScreen() {
     });
   };
 
-  // "Iniciar Nuevo Recorrido" desde el panel inferior: arranca un recorrido con varios sitios de la zona activa
-  // (o de todo el Perú si no hay zona seleccionada), en el orden del mapa.
   const handleStartZoneTour = () => {
     const pool = activeZone ? SITES.filter((s) => s.zone === activeZone) : SITES;
     const stops = pool.slice(0, MAX_STOPS_PER_TOUR);
@@ -204,18 +209,18 @@ export default function MapaScreen() {
   const visibleSites = showSites ? (activeZone ? SITES.filter(s => s.zone === activeZone) : SITES) : [];
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 + extraTopSpace }]}>
+    <View style={[styles.container, { backgroundColor: C.bg }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 + extraTopSpace, backgroundColor: C.white }]}>
         <TouchableOpacity onPress={() => {}}>
           <Ionicons name="search-outline" size={22} color={C.green} />
         </TouchableOpacity>
-        <Text style={styles.title}>InkaVoice</Text>
+        <Text style={[styles.title, { color: C.green }]}>InkaVoice</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={22} color={C.green} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.zoneTabs}>
+      <View style={[styles.zoneTabs, { backgroundColor: C.white }]}>
         {ZONES.map(zone => (
           <TouchableOpacity
             key={zone.key}
@@ -223,7 +228,7 @@ export default function MapaScreen() {
             onPress={() => goToZone(zone.key)}
           >
             <Ionicons name={zone.icon} size={16} color={activeZone === zone.key ? '#FFF' : C.muted} />
-            <Text style={[styles.zoneTabText, activeZone === zone.key && { color: '#FFF' }]}>{zone.label}</Text>
+            <Text style={[styles.zoneTabText, { color: activeZone === zone.key ? '#FFF' : C.muted }]}>{t(zone.labelKey)}</Text>
           </TouchableOpacity>
         ))}
         {activeZone && (
@@ -252,7 +257,7 @@ export default function MapaScreen() {
                 title={site.name}
                 onPress={() => handleSitePress(site)}
               >
-                <View style={[styles.pinCircle, { backgroundColor: zoneInfo.color }, selectedSite?.id === site.id && styles.pinCircleActive]}>
+                <View style={[styles.pinCircle, { backgroundColor: zoneInfo.color }, selectedSite?.id === site.id && [styles.pinCircleActive, { borderColor: C.gold }] ]}>
                   <Ionicons name={CATEGORY_ICON[site.category]} size={16} color="#FFF" />
                 </View>
               </Marker>
@@ -265,7 +270,7 @@ export default function MapaScreen() {
             <Ionicons name="locate" size={20} color={C.green} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.floatBtn, !showSites && styles.floatBtnActive]}
+            style={[styles.floatBtn, !showSites && { backgroundColor: C.green }]}
             onPress={() => { setShowSites(prev => !prev); setSelectedSite(null); }}
           >
             <Ionicons name={showSites ? 'eye-outline' : 'eye-off-outline'} size={20} color={showSites ? C.green : '#FFF'} />
@@ -274,7 +279,7 @@ export default function MapaScreen() {
             <Ionicons name="layers-outline" size={20} color={C.green} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.floatBtn, !showRoutesPanel && styles.floatBtnActive]}
+            style={[styles.floatBtn, !showRoutesPanel && { backgroundColor: C.green }]}
             onPress={() => setShowRoutesPanel(prev => !prev)}
           >
             <Ionicons name={showRoutesPanel ? 'chevron-down' : 'chevron-up'} size={20} color={showRoutesPanel ? C.green : '#FFF'} />
@@ -291,24 +296,24 @@ export default function MapaScreen() {
           <View style={styles.siteCardBody}>
             <View style={styles.siteCardBadge}>
               <Ionicons name={CATEGORY_ICON[selectedSite.category]} size={12} color={C.green} />
-              <Text style={styles.siteCardBadgeText}>{selectedSite.category === 'arqueologico' ? 'Arqueológico' : selectedSite.category === 'natural' ? 'Natural' : 'Colonial'}</Text>
+              <Text style={[styles.siteCardBadgeText, { color: C.green }]}>{selectedSite.category === 'arqueologico' ? t('map_category_archaeological') : selectedSite.category === 'natural' ? t('map_category_natural') : t('map_category_colonial')}</Text>
             </View>
-            <Text style={styles.siteCardTitle}>{selectedSite.name}</Text>
-            <Text style={styles.siteCardDesc} numberOfLines={2}>{selectedSite.shortDesc}</Text>
+            <Text style={[styles.siteCardTitle, { color: C.text }]}>{selectedSite.name}</Text>
+            <Text style={[styles.siteCardDesc, { color: C.muted }]} numberOfLines={2}>{selectedSite.shortDesc}</Text>
             <View style={styles.siteCardBtnRow}>
               <TouchableOpacity
-                style={styles.siteCardBtn}
+                style={[styles.siteCardBtn, { backgroundColor: C.green }]}
                 onPress={() => navigation.navigate('Asistente', { siteName: selectedSite.name })}
               >
-                <Text style={styles.siteCardBtnText}>Ver detalles</Text>
+                <Text style={styles.siteCardBtnText}>{t('map_view_details')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#FFF" />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.siteCardBtnOutline}
+                style={[styles.siteCardBtnOutline, { borderColor: C.green }]}
                 onPress={() => handleStartRoute(selectedSite)}
               >
                 <Ionicons name="navigate" size={15} color={C.green} />
-                <Text style={styles.siteCardBtnOutlineText}>Iniciar Ruta</Text>
+                <Text style={[styles.siteCardBtnOutlineText, { color: C.green }]}>Iniciar Ruta</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -320,23 +325,23 @@ export default function MapaScreen() {
           </TouchableOpacity>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {visibleRoutes.map(route => (
-              <TouchableOpacity key={route.id} onPress={() => setSelectedRoute(route.id)} style={[styles.card, selectedRoute === route.id && styles.cardSelected]}>
+              <TouchableOpacity key={route.id} onPress={() => setSelectedRoute(route.id)} style={[styles.card, selectedRoute === route.id && [styles.cardSelected, { borderColor: C.green }] ]}>
                 <Image source={{ uri: route.img }} style={styles.cardImg} />
                 <View style={styles.cardBody}>
                   <Text style={styles.routeTitle}>{route.name}</Text>
-                  <Text style={styles.routeMeta}>{route.km} · {route.desc}</Text>
+                  <Text style={[styles.routeMeta, { color: C.muted }]}>{route.km} · {route.desc}</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <TouchableOpacity style={styles.startBtn} onPress={handleStartZoneTour}>
+          <TouchableOpacity style={[styles.startBtn, { backgroundColor: C.green }]} onPress={handleStartZoneTour}>
             <Ionicons name="add-circle" size={22} color="#FFF" />
-            <Text style={styles.startText}>Iniciar Nuevo Recorrido</Text>
+            <Text style={styles.startText}>{t('map_start_route')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
-          style={[styles.reopenPill, { bottom: 25 + extraBottomSpace }]}
+          style={[styles.reopenPill, { bottom: 25 + extraBottomSpace, backgroundColor: C.green }]}
           onPress={() => setShowRoutesPanel(true)}
         >
           <Ionicons name="map" size={16} color="#FFF" />
@@ -348,32 +353,31 @@ export default function MapaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  header: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.white, paddingBottom: 10 },
-  title: { fontSize: 28, fontWeight: '800', color: C.green },
-  zoneTabs: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 12, backgroundColor: C.white, gap: 8, alignItems: 'center' },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10 },
+  title: { fontSize: 28, fontWeight: '800' },
+  zoneTabs: { flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 12, gap: 8, alignItems: 'center' },
   zoneTab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F0F0EE' },
-  zoneTabText: { fontSize: 13, fontWeight: '700', color: C.muted },
+  zoneTabText: { fontSize: 13, fontWeight: '700' },
   zoneClear: { padding: 6, borderRadius: 20, backgroundColor: '#F0F0EE' },
   mapArea: { flex: 1 },
   map: { flex: 1, marginHorizontal: 18, borderRadius: 30, overflow: 'hidden' },
   pinCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
-  pinCircleActive: { borderColor: C.gold, borderWidth: 3, transform: [{ scale: 1.15 }] },
-  rightButtons: { position: 'absolute', right: 32, top: 20, gap: 14 },
+  pinCircleActive: { borderWidth: 3, transform: [{ scale: 1.15 }] },
+  rightButtons: { position: 'absolute', right: 32, gap: 14 },
   floatBtn: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  floatBtnActive: { backgroundColor: C.green },
   bottomCard: { position: 'absolute', left: 0, right: 0 },
   collapseHandle: { alignItems: 'center', paddingVertical: 6 },
   collapseHandleBar: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#DDD' },
-  reopenPill: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.green, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, elevation: 6 },
+  reopenPill: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24, elevation: 6 },
   reopenPillText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
   card: { width: 260, marginLeft: 18, backgroundColor: '#FFF', borderRadius: 20, overflow: 'hidden' },
-  cardSelected: { borderWidth: 2, borderColor: C.green },
+  cardSelected: { borderWidth: 2 },
   cardImg: { width: '100%', height: 150 },
   cardBody: { padding: 14 },
   routeTitle: { fontWeight: '800', fontSize: 18 },
-  routeMeta: { marginTop: 6, color: C.muted },
-  startBtn: { alignSelf: 'center', marginTop: 18, height: 58, paddingHorizontal: 24, borderRadius: 30, backgroundColor: C.green, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  routeMeta: { marginTop: 6 },
+  startBtn: { alignSelf: 'center', marginTop: 18, height: 58, paddingHorizontal: 24, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 10 },
   startText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 
   siteCard: { position: 'absolute', left: 18, right: 18, backgroundColor: '#FFF', borderRadius: 20, flexDirection: 'row', overflow: 'hidden', elevation: 8 },
@@ -381,12 +385,12 @@ const styles = StyleSheet.create({
   siteCardImg: { width: 110, height: '100%' },
   siteCardBody: { flex: 1, padding: 14, gap: 4 },
   siteCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0FAF4', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 2 },
-  siteCardBadgeText: { fontSize: 10, fontWeight: '800', color: C.green },
-  siteCardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
-  siteCardDesc: { fontSize: 12, color: C.muted, lineHeight: 16 },
+  siteCardBadgeText: { fontSize: 10, fontWeight: '800' },
+  siteCardTitle: { fontSize: 16, fontWeight: '800' },
+  siteCardDesc: { fontSize: 12, lineHeight: 16 },
   siteCardBtnRow: { gap: 6, marginTop: 4 },
-  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.green, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
+  siteCardBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
   siteCardBtnText: { color: '#FFF', fontWeight: '700', fontSize: 12 },
-  siteCardBtnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1.5, borderColor: C.green },
-  siteCardBtnOutlineText: { color: C.green, fontWeight: '700', fontSize: 12 },
+  siteCardBtnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1.5 },
+  siteCardBtnOutlineText: { fontWeight: '700', fontSize: 12 },
 });

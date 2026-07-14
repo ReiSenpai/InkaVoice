@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,9 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AuthTopBar from '../components/AuthTopBar';
-import { colors } from '../theme/colors';
 import { useUser } from '../context/UserContext';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 import type { RootStackParamList } from '../navigation/types';
+import { useTheme } from '../context/ThemeContext';
 
 type Language = 'es' | 'en' | 'qu';
 
@@ -40,22 +41,23 @@ const LANGUAGES: { id: Language; label: string }[] = [
 ];
 
 const INTERESTS = [
-  { id: 'arqueologia', label: 'Arqueología', icon: '🏛' },
-  { id: 'gastronomia', label: 'Gastronomía', icon: '🍴' },
-  { id: 'naturaleza', label: 'Naturaleza', icon: '🌿' },
-  { id: 'artesania', label: 'Artesanía', icon: '🎨' },
-  { id: 'aventura', label: 'Aventura', icon: '🏔' },
+  { id: 'arqueologia', labelKey: 'register_interest_archaeology' },
+  { id: 'gastronomia', labelKey: 'register_interest_gastronomy' },
+  { id: 'naturaleza', labelKey: 'register_interest_nature' },
+  { id: 'artesania', labelKey: 'register_interest_crafts' },
+  { id: 'aventura', labelKey: 'register_interest_adventure' },
 ];
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { setName } = useUser();
+  const { alert } = useAlert();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [country, setCountry] = useState('');
-  const [language, setLanguage] = useState<Language>('es');
+  const { language, setLanguage, t } = useLanguage();
   const [interests, setInterests] = useState<string[]>(['arqueologia']);
   const [countryModalVisible, setCountryModalVisible] = useState(false);
 
@@ -69,171 +71,14 @@ export default function RegisterScreen() {
 
   const handleCreateAccount = () => {
     setName(fullName.trim() || 'Usuario');
-    Alert.alert('Cuenta creada', 'Tu cuenta se creó correctamente. Ahora inicia sesión para continuar.', [
+    alert(t('alert_account_created_title'), t('alert_account_created_message'), [
       { text: 'OK', onPress: () => navigation.replace('Login') },
     ]);
   };
 
-  return (
-    <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <AuthTopBar
-            actionLabel="Iniciar Sesión"
-            onAction={() => navigation.navigate('Login')}
-          />
+  const { colors } = useTheme();
 
-          <View style={styles.card}>
-            <Text style={styles.title}>Comienza tu viaje</Text>
-            <Text style={styles.subtitle}>
-              Únete a la plataforma de voz que da vida a la historia del Perú.
-            </Text>
-
-            <Text style={styles.label}>NOMBRE COMPLETO</Text>
-            <TextInput
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Ej. Juan Pérez"
-              placeholderTextColor={colors.gray400}
-              style={styles.underlineInput}
-            />
-
-            <Text style={[styles.label, styles.fieldGap]}>CORREO ELECTRÓNICO</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="nombre@ejemplo.com"
-              placeholderTextColor={colors.gray400}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.underlineInput}
-            />
-
-            <Text style={[styles.label, styles.fieldGap]}>CONTRASEÑA</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor={colors.gray400}
-                secureTextEntry={!showPassword}
-                style={[styles.underlineInput, styles.passwordInput]}
-              />
-              <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={8}>
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
-              </Pressable>
-            </View>
-
-            <Text style={[styles.label, styles.fieldGap]}>PAÍS DE ORIGEN</Text>
-            <Pressable
-              style={styles.selectField}
-              onPress={() => setCountryModalVisible(true)}
-            >
-              <Text style={country ? styles.selectValue : styles.selectPlaceholder}>
-                {country || 'Selecciona tu país'}
-              </Text>
-              <Text style={styles.selectArrow}>▾</Text>
-            </Pressable>
-
-            <Text style={[styles.label, styles.fieldGap]}>IDIOMA PREFERIDO</Text>
-            <View style={styles.languageRow}>
-              {LANGUAGES.map((item) => {
-                const selected = language === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    style={[styles.languageOption, selected && styles.languageOptionActive]}
-                    onPress={() => setLanguage(item.id)}
-                  >
-                    <View style={[styles.radio, selected && styles.radioActive]}>
-                      {selected ? <View style={styles.radioDot} /> : null}
-                    </View>
-                    <Text style={[styles.languageText, selected && styles.languageTextActive]}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={[styles.label, styles.fieldGap]}>INTERESES TURÍSTICOS</Text>
-            <View style={styles.chipsRow}>
-              {INTERESTS.map((item) => {
-                const selected = interests.includes(item.id);
-                return (
-                  <Pressable
-                    key={item.id}
-                    style={[styles.chip, selected && styles.chipActive]}
-                    onPress={() => toggleInterest(item.id)}
-                  >
-                    <Text style={styles.chipIcon}>{item.icon}</Text>
-                    <Text style={[styles.chipText, selected && styles.chipTextActive]}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-              onPress={handleCreateAccount}
-            >
-              <Text style={styles.primaryBtnText}>CREAR CUENTA</Text>
-              <Text style={styles.primaryBtnArrow}>→</Text>
-            </Pressable>
-
-            <Text style={styles.loginText}>
-              ¿Ya tienes una cuenta?{' '}
-              <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
-                Inicia sesión aquí
-              </Text>
-            </Text>
-          </View>
-
-          <View style={styles.footerDivider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerDiamond}>◆</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Text style={styles.footer}>
-            © 2024 InkaVoice • Un viaje a través de la herencia cultural del Perú
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <Modal visible={countryModalVisible} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setCountryModalVisible(false)}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Selecciona tu país</Text>
-            {COUNTRIES.map((item) => (
-              <Pressable
-                key={item}
-                style={styles.modalOption}
-                onPress={() => {
-                  setCountry(item);
-                  setCountryModalVisible(false);
-                }}
-              >
-                <Text style={styles.modalOptionText}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-    </Container>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
@@ -421,3 +266,164 @@ const styles = StyleSheet.create({
   },
   modalOptionText: { fontSize: 16, color: '#1f2937' },
 });
+
+
+  return (
+    <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <AuthTopBar
+            actionLabel="Iniciar Sesión"
+            onAction={() => navigation.navigate('Login')}
+          />
+
+          <View style={styles.card}>
+            <Text style={styles.title}>{t('register_title')}</Text>
+            <Text style={styles.subtitle}>
+              {t('register_subtitle')}
+            </Text>
+
+            <Text style={styles.label}>{t('register_fullname')}</Text>
+            <TextInput
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Ej. Juan Pérez"
+              placeholderTextColor={colors.gray400}
+              style={styles.underlineInput}
+            />
+
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_email')}</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="nombre@ejemplo.com"
+              placeholderTextColor={colors.gray400}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.underlineInput}
+            />
+
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_password')}</Text>
+            <View style={styles.passwordRow}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.gray400}
+                secureTextEntry={!showPassword}
+                style={[styles.underlineInput, styles.passwordInput]}
+              />
+              <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={8}>
+                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+              </Pressable>
+            </View>
+
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_country')}</Text>
+            <Pressable
+              style={styles.selectField}
+              onPress={() => setCountryModalVisible(true)}
+            >
+              <Text style={country ? styles.selectValue : styles.selectPlaceholder}>
+                {country || t('register_country_placeholder')}
+              </Text>
+              <Text style={styles.selectArrow}>▾</Text>
+            </Pressable>
+
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_language')}</Text>
+            <View style={styles.languageRow}>
+              {LANGUAGES.map((item) => {
+                const selected = language === item.id;
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.languageOption, selected && styles.languageOptionActive]}
+                    onPress={() => setLanguage(item.id)}
+                  >
+                    <View style={[styles.radio, selected && styles.radioActive]}>
+                      {selected ? <View style={styles.radioDot} /> : null}
+                    </View>
+                    <Text style={[styles.languageText, selected && styles.languageTextActive]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.label, styles.fieldGap]}>{t('register_interests')}</Text>
+            <View style={styles.chipsRow}>
+              {INTERESTS.map((item) => {
+                const selected = interests.includes(item.id);
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.chip, selected && styles.chipActive]}
+                    onPress={() => toggleInterest(item.id)}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                      {t(item.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+              onPress={handleCreateAccount}
+            >
+              <Text style={styles.primaryBtnText}>{t('register_submit')}</Text>
+              <Text style={styles.primaryBtnArrow}>→</Text>
+            </Pressable>
+
+            <Text style={styles.loginText}>
+              {t('register_have_account')} 
+              <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+                {t('register_login_link')}
+              </Text>
+            </Text>
+          </View>
+
+          <View style={styles.footerDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerDiamond}>◆</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Text style={styles.footer}>
+            © 2024 InkaVoice • Un viaje a través de la herencia cultural del Perú
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <Modal visible={countryModalVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setCountryModalVisible(false)}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Selecciona tu país</Text>
+            {COUNTRIES.map((item) => (
+              <Pressable
+                key={item}
+                style={styles.modalOption}
+                onPress={() => {
+                  setCountry(item);
+                  setCountryModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalOptionText}>{item}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </Container>
+  );
+}
+
+

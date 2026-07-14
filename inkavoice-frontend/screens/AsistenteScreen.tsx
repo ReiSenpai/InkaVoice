@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -10,6 +10,8 @@ import {
   AudioModule,
 } from 'expo-audio';
 import BottomTabBar from '../components/BottomTabBar';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -55,12 +57,15 @@ function WaveBar({ delay, color, active }: { delay: number; color: string; activ
 export default function AsistenteScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const siteName: string | undefined = route.params?.siteName;
+  
+  // Rescatamos las alertas y traducciones de fusion
+  const { alert } = useAlert();
+  const { t } = useLanguage();
 
+  const siteName: string | undefined = route.params?.siteName;
   const scrollRef = useRef<ScrollView>(null);
   const micPulse = useRef(new Animated.Value(1)).current;
 
-  // Si venimos de un sitio del mapa, el saludo inicial se personaliza con ese lugar.
   const initialMessage: Message = siteName
     ? {
         id: 1,
@@ -73,28 +78,20 @@ export default function AsistenteScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const hasAutoAskedRef = useRef(false);
 
-  // --- Grabación de audio real (expo-audio) ---
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
   const isRecording = recorderState.isRecording;
 
   useEffect(() => {
-    // Pide permiso de micrófono apenas se monta la pantalla
     (async () => {
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted) {
-        // No bloqueamos la pantalla, solo avisamos cuando intenten grabar
       }
     })();
   }, []);
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
-  // TODO (backend/IA de tu compañero): esta función arma la respuesta.
-  // Por ahora usa AI_REPLIES para las sugerencias fijas, y para preguntas
-  // libres (como "Cuéntame sobre {siteName}") cae en un texto genérico.
-  // Cuando el backend esté listo, reemplazar por una llamada real que le
-  // pase el texto del usuario (y opcionalmente `siteName`) al modelo de IA.
   const getAiReply = (userText: string): string => {
     if (AI_REPLIES[userText]) return AI_REPLIES[userText];
     if (siteName && userText.toLowerCase().includes(siteName.toLowerCase())) {
@@ -116,38 +113,21 @@ export default function AsistenteScreen() {
     }, 1000);
   };
 
-  // Si llegamos con un sitio seleccionado desde el mapa, preguntamos
-  // automáticamente por él apenas se abre la pantalla.
+
   useEffect(() => {
     if (siteName && !hasAutoAskedRef.current) {
       hasAutoAskedRef.current = true;
       setTimeout(() => sendMessage(`Cuéntame sobre ${siteName}`), 500);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteName]);
 
-  // Se llama cuando termina de grabar y ya tenemos el audio listo (uri local del archivo)
   const handleRecordedAudio = async (uri: string) => {
-    // Mostramos el mensaje del usuario como nota de voz mientras se procesa
     const placeholderId = Date.now();
     setMessages(prev => [...prev, { id: placeholderId, sender: 'user', text: '🎤 Nota de voz enviada...' }]);
     setIsTyping(true);
     scrollToBottom();
 
     try {
-      // ============================================================
-      // Transcripción real del audio grabado usando la API de
-      // OpenAI Whisper (funciona 100% en Expo Go: es solo un fetch,
-      // no requiere módulo nativo). Si tu compañero usa otro proveedor
-      // (Google Speech-to-Text, AssemblyAI, un backend propio, etc.)
-      // solo tiene que cambiar la URL y el formato de la petición/respuesta.
-      //
-      // ⚠️ IMPORTANTE: no dejes la API key hardcodeada así en producción.
-      // Lo correcto es que este fetch le pegue a TU backend (el que
-      // hará tu compañero), y sea el backend el que le pegue a OpenAI
-      // guardando la key de forma segura del lado del servidor.
-      // ============================================================
-
       const formData = new FormData();
       formData.append('file', {
         uri,
@@ -160,7 +140,6 @@ export default function AsistenteScreen() {
       const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
-          // TODO: reemplazar por la key real (idealmente vía backend propio, no aquí)
           Authorization: 'Bearer TU_OPENAI_API_KEY',
         },
         body: formData,
@@ -173,16 +152,8 @@ export default function AsistenteScreen() {
       const transcriptionData = await transcriptionResponse.json();
       const userTranscription: string = transcriptionData.text?.trim() || '(no se entendió el audio)';
 
-      // ============================================================
-      // TODO (backend/IA de tu compañero): con `userTranscription` ya
-      // tenemos el texto real de lo que dijo el usuario. Ahora hay que
-      // mandarlo al backend/modelo de IA para obtener la respuesta.
-      // ============================================================
-
-      // --- Simulación temporal de la respuesta de la IA mientras se conecta el backend ---
       await new Promise(resolve => setTimeout(resolve, 600));
       const aiReplyText = getAiReply(userTranscription);
-      // --- Fin de simulación ---
 
       setMessages(prev => prev.map(m => (m.id === placeholderId ? { ...m, text: userTranscription } : m)));
       setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiReplyText }]);
@@ -196,7 +167,6 @@ export default function AsistenteScreen() {
 
   const toggleRecording = async () => {
     if (isRecording) {
-      // Detener grabación
       micPulse.stopAnimation();
       micPulse.setValue(1);
       await audioRecorder.stop();
@@ -207,10 +177,9 @@ export default function AsistenteScreen() {
       return;
     }
 
-    // Iniciar grabación
     const permission = await AudioModule.requestRecordingPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu micrófono para grabar tu voz.');
+      alert(t('alert_mic_permission_title'), t('alert_mic_permission_message'));
       return;
     }
 
@@ -222,7 +191,7 @@ export default function AsistenteScreen() {
         Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])).start();
     } catch (e) {
-      Alert.alert('Error', 'No se pudo iniciar la grabación.');
+      alert(t('alert_recording_error_title'), t('alert_recording_error_message'));
     }
   };
 
@@ -241,7 +210,7 @@ export default function AsistenteScreen() {
         </View>
       </View>
 
-      <View style={styles.hero}><Text style={styles.heroTitle}>Tu Guía Personal de IA</Text></View>
+      <View style={styles.hero}><Text style={styles.heroTitle}>{t('assistant_hero_title')}</Text></View>
 
       <ScrollView ref={scrollRef} style={styles.chat} contentContainerStyle={styles.chatContent}>
         {messages.map(msg => (

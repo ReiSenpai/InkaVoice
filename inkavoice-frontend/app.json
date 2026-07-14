@@ -4,7 +4,7 @@
     "slug": "inkavoice-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/android-icon-foreground.png",
     "scheme": "inkavoicefrontend",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -28,7 +28,7 @@
         {
           "backgroundColor": "#208AEF",
           "android": {
-            "image": "./assets/splash-icon.png",
+            "image": "./assets/android-icon-foreground.png",
             "imageWidth": 76
           }
         }

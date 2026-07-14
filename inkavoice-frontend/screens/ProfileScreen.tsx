@@ -5,19 +5,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
+import { useAlert } from '../context/AlertContext';
+import { useLanguage } from '../context/LanguageContext';
 import { getInitials } from '../utils/initials';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 const STATS = [
-  { id: 'sitios', icon: 'location-outline', value: 12, label: 'SITIOS VISITADOS' },
-  { id: 'memorias', icon: 'mic-outline', value: 156, label: 'MEMORIAS' },
-  { id: 'regiones', icon: 'earth-outline', value: 3, label: 'REGIONES' },
+  { id: 'sitios', icon: 'location-outline', value: 12, labelKey: 'profile_stat_sites' },
+  { id: 'memorias', icon: 'mic-outline', value: 156, labelKey: 'profile_stat_memories' },
+  { id: 'regiones', icon: 'earth-outline', value: 3, labelKey: 'profile_stat_regions' },
 ];
 
 const REGION_PROGRESS = [
-  { region: 'Costa', pct: 100 },
-  { region: 'Sierra', pct: 45 },
-  { region: 'Selva', pct: 12 },
+  { region: 'Costa', pct: 100, labelKey: 'category_coast' },
+  { region: 'Sierra', pct: 45, labelKey: 'category_highlands' },
+  { region: 'Selva', pct: 12, labelKey: 'category_jungle' },
 ];
 
 const OVERALL_PROGRESS = 64;
@@ -48,6 +50,8 @@ const INITIAL_MEMORIES: Memory[] = [
 
 export default function ProfileScreen() {
   const { photoUri, setPhotoUri, name } = useUser();
+  const { alert } = useAlert();
+  const { t } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [memoryModalVisible, setMemoryModalVisible] = useState(false);
   const [newMemoryText, setNewMemoryText] = useState('');
@@ -57,8 +61,8 @@ export default function ProfileScreen() {
 
   const removePhoto = () => {
     setModalVisible(false);
-    Alert.alert('Eliminar foto', '¿Seguro que quieres quitar tu foto de perfil?', [
-      { text: 'Cancelar', style: 'cancel' },
+    alert(t('alert_remove_photo_title'), t('alert_remove_photo_message'), [
+      { text: t('alert_cancel'), style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => setPhotoUri(null) },
     ]);
   };
@@ -67,7 +71,7 @@ export default function ProfileScreen() {
     setModalVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para elegir una foto.');
+      alert(t('alert_mic_permission_title'), t('alert_gallery_permission_message'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,13 +89,12 @@ export default function ProfileScreen() {
     setModalVisible(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu cámara para tomar una foto.');
+      alert(t('alert_mic_permission_title'), t('alert_camera_photo_permission_message'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      allowsEditing: false,
+      quality: 0.5,
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
       setPhotoUri(result.assets[0].uri);
@@ -118,7 +121,7 @@ export default function ProfileScreen() {
   };
 
   const handleBadgePress = (badge: Badge) => {
-    Alert.alert(badge.unlocked ? `🏅 ${badge.title}` : `🔒 ${badge.title}`, badge.description);
+    alert(badge.unlocked ? `${t('alert_badge_unlocked_prefix')} ${badge.title}` : `${t('alert_badge_locked_prefix')} ${badge.title}`, badge.description);
   };
 
   const openNewMemoryModal = () => {
@@ -136,172 +139,9 @@ export default function ProfileScreen() {
     setMemoryModalVisible(false);
   };
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>InkaVoice</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={22} color={colors.green} /></TouchableOpacity>
-      </View>
+  const { colors } = useTheme();
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.avatarSection}>
-          <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto}>
-            {photoUri ? (
-              <Image source={{ uri: photoUri }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
-              </View>
-            )}
-            <View style={styles.editBadge}>
-              <Ionicons name="camera" size={16} color={colors.white} />
-            </View>
-          </TouchableOpacity>
-
-          <Text style={styles.name}>{name}</Text>
-          <TouchableOpacity onPress={handleChangePhoto}>
-            <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statsRow}>
-          {STATS.map(stat => (
-            <View key={stat.id} style={styles.statCard}>
-              <Ionicons name={stat.icon as any} size={20} color={colors.green} />
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <View>
-              <Text style={styles.progressTitle}>Exploración del Perú</Text>
-              <Text style={styles.progressSubtitle}>Camino a ser "Leyenda de los Andes"</Text>
-            </View>
-            <Text style={styles.progressPct}>{OVERALL_PROGRESS}%</Text>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${OVERALL_PROGRESS}%` }]} />
-          </View>
-          <View style={styles.regionLegend}>
-            {REGION_PROGRESS.map(r => (
-              <Text key={r.region} style={styles.regionLegendText}>{r.region}: {r.pct}%</Text>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Insignias Culturales</Text>
-          <TouchableOpacity onPress={() => Alert.alert('Todas las insignias', `Tienes ${BADGES.filter(b => b.unlocked).length} de ${BADGES.length} insignias desbloqueadas.`)}>
-            <Text style={styles.sectionLink}>Ver todas</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.badgesGrid}>
-          {BADGES.map(badge => (
-            <TouchableOpacity key={badge.id} style={styles.badgeCard} onPress={() => handleBadgePress(badge)}>
-              <View style={[styles.badgeIconWrap, !badge.unlocked && styles.badgeIconWrapLocked]}>
-                <Ionicons name={badge.icon} size={26} color={badge.unlocked ? colors.gold : colors.gray400} />
-              </View>
-              <Text style={[styles.badgeTitle, !badge.unlocked && styles.badgeTitleLocked]}>{badge.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Memorias Destacadas</Text>
-        </View>
-        {memories.map(memory => (
-          <TouchableOpacity
-            key={memory.id}
-            style={styles.memoryCard}
-            onPress={() => Alert.alert(memory.title, 'Reproduciendo memoria sonora... (demo)')}
-          >
-            <View style={styles.memoryIconWrap}>
-              <Ionicons name="play-circle" size={28} color={colors.white} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.memoryTitle}>{memory.title}</Text>
-              <Text style={styles.memorySubtitle}>{memory.subtitle}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        <TouchableOpacity style={styles.newMemoryBtn} onPress={openNewMemoryModal}>
-          <Ionicons name="add-circle-outline" size={20} color={colors.white} />
-          <Text style={styles.newMemoryText}>Nueva Memoria</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Modal: cambiar foto */}
-      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
-          <View style={[styles.modalContent, { paddingBottom: 35 }]}>
-            <Text style={styles.modalTitle}>Foto de perfil</Text>
-            <Text style={styles.modalSubtitle}>¿Qué deseas hacer?</Text>
-
-            <TouchableOpacity style={styles.modalOption} onPress={takePhoto}>
-              <Ionicons name="camera-outline" size={22} color={colors.green} style={styles.modalIcon} />
-              <Text style={styles.modalOptionText}>Tomar foto</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.modalOption} onPress={pickFromLibrary}>
-              <Ionicons name="image-outline" size={22} color={colors.green} style={styles.modalIcon} />
-              <Text style={styles.modalOptionText}>Elegir de galería</Text>
-            </TouchableOpacity>
-
-            {photoUri && (
-              <TouchableOpacity style={styles.modalOption} onPress={removePhoto}>
-                <Ionicons name="trash-outline" size={22} color="#D32F2F" style={styles.modalIcon} />
-                <Text style={[styles.modalOptionText, { color: '#D32F2F', fontWeight: '700' }]}>Eliminar foto actual</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[styles.modalOption, { borderBottomWidth: 0, marginTop: 12, justifyContent: 'center' }]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={[styles.modalOptionText, { color: colors.gray400, fontWeight: '700' }]}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Modal: nueva memoria (funciona igual en Android e iOS) */}
-      <Modal visible={memoryModalVisible} transparent animationType="fade" onRequestClose={() => setMemoryModalVisible(false)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMemoryModalVisible(false)}>
-            <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { paddingBottom: 24 }]}>
-              <Text style={styles.modalTitle}>Nueva memoria</Text>
-              <Text style={styles.modalSubtitle}>Dale un nombre a tu nueva memoria sonora</Text>
-
-              <TextInput
-                value={newMemoryText}
-                onChangeText={setNewMemoryText}
-                placeholder="Ej. El eco de Choquequirao"
-                placeholderTextColor={colors.gray400}
-                style={styles.memoryInput}
-                autoFocus
-              />
-
-              <View style={styles.memoryModalActions}>
-                <TouchableOpacity style={styles.memoryModalCancel} onPress={() => setMemoryModalVisible(false)}>
-                  <Text style={styles.memoryModalCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.memoryModalConfirm} onPress={confirmNewMemory}>
-                  <Text style={styles.memoryModalConfirmText}>Guardar</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </Modal>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+  const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingBottom: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 24 },
@@ -343,11 +183,11 @@ const styles = StyleSheet.create({
 
   memoryCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 10, backgroundColor: colors.greenDark, borderRadius: 14, padding: 14, gap: 12 },
   memoryIconWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  memoryTitle: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  memoryTitle: { color: colors.textOnDark, fontSize: 14, fontWeight: '700' },
   memorySubtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 2 },
 
   newMemoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 20, marginTop: 12, backgroundColor: colors.gold, borderRadius: 14, paddingVertical: 16 },
-  newMemoryText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  newMemoryText: { color: colors.textOnDark, fontSize: 14, fontWeight: '700' },
 
   modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end', zIndex: 10 },
   modalContent: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 20 },
@@ -364,3 +204,170 @@ const styles = StyleSheet.create({
   memoryModalConfirm: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.green, alignItems: 'center' },
   memoryModalConfirmText: { color: colors.white, fontWeight: '700' },
 });
+
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : 20 }]}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>InkaVoice</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}><Ionicons name="settings-outline" size={22} color={colors.green} /></TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitials}>{getInitials(name)}</Text>
+              </View>
+            )}
+            <View style={styles.editBadge}>
+              <Ionicons name="camera" size={16} color={colors.textOnDark} />
+            </View>
+          </TouchableOpacity>
+
+          <Text style={styles.name}>{name}</Text>
+          <TouchableOpacity onPress={handleChangePhoto}>
+            <Text style={styles.changePhotoText}>{t('profile_change_photo')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.statsRow}>
+          {STATS.map(stat => (
+            <View key={stat.id} style={styles.statCard}>
+              <Ionicons name={stat.icon as any} size={20} color={colors.green} />
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{t(stat.labelKey)}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <View>
+              <Text style={styles.progressTitle}>{t('profile_progress_title')}</Text>
+              <Text style={styles.progressSubtitle}>{t("profile_progress_subtitle")}</Text>
+            </View>
+            <Text style={styles.progressPct}>{OVERALL_PROGRESS}%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${OVERALL_PROGRESS}%` }]} />
+          </View>
+          <View style={styles.regionLegend}>
+            {REGION_PROGRESS.map(r => (
+              <Text key={r.region} style={styles.regionLegendText}>{t(r.labelKey)}: {r.pct}%</Text>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('profile_badges_title')}</Text>
+          <TouchableOpacity onPress={() => alert(t('alert_all_badges_title'), t('alert_all_badges_message').replace('{unlocked}', String(BADGES.filter(b => b.unlocked).length)).replace('{total}', String(BADGES.length)))}>
+            <Text style={styles.sectionLink}>{t('profile_view_all')}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.badgesGrid}>
+          {BADGES.map(badge => (
+            <TouchableOpacity key={badge.id} style={styles.badgeCard} onPress={() => handleBadgePress(badge)}>
+              <View style={[styles.badgeIconWrap, !badge.unlocked && styles.badgeIconWrapLocked]}>
+                <Ionicons name={badge.icon} size={26} color={badge.unlocked ? colors.gold : colors.gray400} />
+              </View>
+              <Text style={[styles.badgeTitle, !badge.unlocked && styles.badgeTitleLocked]}>{badge.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('profile_memories_title')}</Text>
+        </View>
+        {memories.map(memory => (
+          <TouchableOpacity
+            key={memory.id}
+            style={styles.memoryCard}
+            onPress={() => alert(memory.title, t('alert_memory_playing_message'))}
+          >
+            <View style={styles.memoryIconWrap}>
+              <Ionicons name="play-circle" size={28} color={colors.textOnDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.memoryTitle}>{memory.title}</Text>
+              <Text style={styles.memorySubtitle}>{memory.subtitle}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity style={styles.newMemoryBtn} onPress={openNewMemoryModal}>
+          <Ionicons name="add-circle-outline" size={20} color={colors.textOnDark} />
+          <Text style={styles.newMemoryText}>{t('profile_new_memory')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Modal: cambiar foto */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
+          <View style={[styles.modalContent, { paddingBottom: 35 }]}>
+            <Text style={styles.modalTitle}>{t('profile_modal_photo_title')}</Text>
+            <Text style={styles.modalSubtitle}>{t('profile_modal_photo_subtitle')}</Text>
+
+            <TouchableOpacity style={styles.modalOption} onPress={takePhoto}>
+              <Ionicons name="camera-outline" size={22} color={colors.green} style={styles.modalIcon} />
+              <Text style={styles.modalOptionText}>{t('profile_modal_take_photo')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.modalOption} onPress={pickFromLibrary}>
+              <Ionicons name="image-outline" size={22} color={colors.green} style={styles.modalIcon} />
+              <Text style={styles.modalOptionText}>{t('profile_modal_choose_gallery')}</Text>
+            </TouchableOpacity>
+
+            {photoUri && (
+              <TouchableOpacity style={styles.modalOption} onPress={removePhoto}>
+                <Ionicons name="trash-outline" size={22} color="#D32F2F" style={styles.modalIcon} />
+                <Text style={[styles.modalOptionText, { color: '#D32F2F', fontWeight: '700' }]}>{t('profile_modal_remove_photo')}</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.modalOption, { borderBottomWidth: 0, marginTop: 12, justifyContent: 'center' }]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={[styles.modalOptionText, { color: colors.gray400, fontWeight: '700' }]}>{t('profile_modal_cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={memoryModalVisible} transparent animationType="fade" onRequestClose={() => setMemoryModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setMemoryModalVisible(false)}>
+            <TouchableOpacity activeOpacity={1} style={[styles.modalContent, { paddingBottom: 24 }]}>
+              <Text style={styles.modalTitle}>{t('profile_modal_new_memory_title')}</Text>
+              <Text style={styles.modalSubtitle}>{t('profile_modal_new_memory_subtitle')}</Text>
+
+              <TextInput
+                value={newMemoryText}
+                onChangeText={setNewMemoryText}
+                placeholder="Ej. El eco de Choquequirao"
+                placeholderTextColor={colors.gray400}
+                style={styles.memoryInput}
+                autoFocus
+              />
+
+              <View style={styles.memoryModalActions}>
+                <TouchableOpacity style={styles.memoryModalCancel} onPress={() => setMemoryModalVisible(false)}>
+                  <Text style={styles.memoryModalCancelText}>{t('profile_modal_cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.memoryModalConfirm} onPress={confirmNewMemory}>
+                  <Text style={styles.memoryModalConfirmText}>{t('profile_modal_save')}</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+

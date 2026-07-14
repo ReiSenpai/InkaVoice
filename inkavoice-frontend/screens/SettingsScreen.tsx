@@ -30,22 +30,18 @@ export default function SettingsScreen() {
   const { alert } = useAlert();
   const { language, setLanguage, t } = useLanguage();
   const [langModalVisible, setLangModalVisible] = useState(false);
-  const { isDark, toggleDarkMode } = useTheme();
+  const { isDark, toggleDarkMode, colors } = useTheme();
 
   const handleItemPress = (item: SettingItem) => {
-<<<<<<< HEAD
     if (item.id === 'sos') {
       navigation.navigate('Emergencia');
       return;
     }
-    Alert.alert(item.title, item.subtitle);
-=======
     if (item.id === 'idioma') {
       setLangModalVisible(true);
       return;
     }
     alert(t(item.titleKey), t(item.subtitleKey));
->>>>>>> 1a361614d8892f197482263bf4a554723f925c7d
   };
 
   const handleLogout = () => {
@@ -54,13 +50,10 @@ export default function SettingsScreen() {
       {
         text: t('alert_logout_title'),
         style: 'destructive',
-        // Corregido: Ahora redirecciona a 'Splash' que es la raíz de la navegación unificada
         onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Splash' }] }),
       },
     ]);
   };
-
-  const { colors } = useTheme();
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -192,29 +185,4 @@ export default function SettingsScreen() {
       </Modal>
     </View>
   );
-<<<<<<< HEAD
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, marginBottom: 16,
-  },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.green },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40, alignItems: 'center' },
-  eyebrow: { fontSize: 11, fontWeight: '700', color: colors.gold, letterSpacing: 1.5, marginBottom: 8, textAlign: 'center' },
-  intro: { fontSize: 14, color: colors.gray600, textAlign: 'center', lineHeight: 21, marginBottom: 24, paddingHorizontal: 8 },
-  card: { width: '100%', backgroundColor: colors.white, borderRadius: 18, borderWidth: 1, borderColor: colors.gray100, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.gray100 },
-  iconWrap: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: '#222' },
-  rowSubtitle: { fontSize: 12, color: colors.gray500, marginTop: 2 },
-  footer: { alignItems: 'center', marginTop: 32, gap: 6 },
-  footerVersion: { fontSize: 11, fontWeight: '700', color: colors.gray400, letterSpacing: 1, marginTop: 8 },
-  footerTagline: { fontSize: 11, color: colors.gray400 },
-});
-=======
-}
->>>>>>> 1a361614d8892f197482263bf4a554723f925c7d

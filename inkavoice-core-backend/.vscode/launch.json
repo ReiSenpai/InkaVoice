@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-InkavoiceApplication<inkavoice>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "backend.inkavoice.InkavoiceApplication",
+            "projectName": "inkavoice",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

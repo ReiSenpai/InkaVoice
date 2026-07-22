@@ -12,6 +12,10 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as FileSystemRaw from 'expo-file-system';
+const FileSystem = FileSystemRaw as any;
+import { useLanguage } from '../../../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -49,20 +53,10 @@ const SUGGESTIONS = [
 ];
 
 const AI_REPLIES: Record<string, string> = {
-  '¿Cómo llego desde aquí?':
-    'Desde tu ubicación actual puedes caminar unos 15 minutos hacia el acceso principal de Sacsayhuamán. 🗺️',
-
-  'Dónde comer cerca':
-    'Cerca encontrarás restaurantes con comida andina tradicional y cafés locales. 🍽️',
-
-  'Historia de los Incas':
-    'El Imperio Inca fue una civilización andina que alcanzó gran expansión entre 1438 y 1533. 📚',
-
-  'Ruta Inca Trail':
-    'La Ruta Inca conecta varios sitios arqueológicos y termina en Machu Picchu. 🏔️',
-
-  '¿Qué puedo visitar cerca de Sacsayhuamán?':
-    'Puedes visitar Qenqo, Puka Pukara y Tambomachay. ✨',
+  '¿Cómo llego desde aquí?': 'Desde tu ubicación actual puedes caminar unos 15 minutos hacia el acceso principal de Sacsayhuamán. 🗺️',
+  'Dónde comer cerca': 'Cerca encontrarás restaurantes con comida andina tradicional y cafés locales. 🍽️',
+  'Historia de los Incas': 'El Imperio Inca fue una civilización andina que alcanzó gran expansión entre 1438 y 1533. 📚',
+  'Ruta Inca Trail': 'La Ruta Inca conecta varios sitios arqueológicos y termina en Machu Picchu. 🏔️',
 };
 
 function WaveBar({ delay, color }: { delay: number; color: string }) {
@@ -84,60 +78,119 @@ export default function AsistenteScreen() {
   const [messages, setMessages] = useState<Message[]>(INITIAL);
   const [isRecording, setIsRecording] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const { language } = useLanguage();
+
+  const [recordingObject, setRecordingObject] = useState<Audio.Recording | undefined>();
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+
+  const CORE_BACKEND_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
-    const sendMessage = (text: string) => {
+  // Maneja el envío de sugerencias predeterminadas
+  const sendMessage = (text: string) => {
     if (!text.trim()) return;
-
-    setMessages(prev => [
-        ...prev,
-        {
-        id: Date.now(),
-        sender: 'user',
-        text,
-        },
-    ]);
-
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text }]);
     setIsTyping(true);
-
     scrollToBottom();
 
     setTimeout(() => {
-
-        const reply =
-        AI_REPLIES[text]
-        ??
-        'Todavía no tengo información específica sobre eso.';
-
-        setMessages(prev => [
-        ...prev,
-        {
-            id: Date.now() + 1,
-            sender: 'ai',
-            text: reply,
-        },
-        ]);
-
-        setIsTyping(false);
-
-        scrollToBottom();
-
+      const reply = AI_REPLIES[text] ?? 'Todavía no tengo información específica sobre eso.';
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: reply }]);
+      setIsTyping(false);
+      scrollToBottom();
     }, 1000);
-    };
+  };
 
-  const toggleRecording = () => {
+  // Lógica principal de inicio/fin de grabación con IA
+  const toggleRecording = async () => {
     if (isRecording) {
+      // Detener grabación
       setIsRecording(false);
       micPulse.stopAnimation();
       micPulse.setValue(1);
-      sendMessage('¿Qué puedo visitar cerca de Sacsayhuamán?');
+
+      if (!recordingObject) return;
+
+      await recordingObject.stopAndUnloadAsync();
+      const uri = recordingObject.getURI();
+      setRecordingObject(undefined);
+
+      if (uri) {
+        await sendAudioToBackend(uri);
+      }
     } else {
-      setIsRecording(true);
-      Animated.loop(Animated.sequence([
-        Animated.timing(micPulse, { toValue: 1.15, duration: 500, useNativeDriver: true }),
-        Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ])).start();
+      // Iniciar grabación
+      try {
+        if (sound) await sound.unloadAsync();
+
+        await Audio.requestPermissionsAsync();
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        
+        setRecordingObject(recording);
+        setIsRecording(true);
+        
+        Animated.loop(Animated.sequence([
+          Animated.timing(micPulse, { toValue: 1.15, duration: 500, useNativeDriver: true }),
+          Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
+        ])).start();
+      } catch (err) {
+        console.error('Error al iniciar grabación', err);
+      }
+    }
+  };
+
+  const sendAudioToBackend = async (uri: string) => {
+    setIsTyping(true);
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: '🎤 [Mensaje de Voz]' }]);
+    scrollToBottom();
+
+    try {
+      const formData = new FormData();
+      formData.append('language', language);
+      formData.append('audio', {
+        uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+        type: 'audio/m4a',
+        name: 'audio.m4a',
+      } as any);
+
+      const response = await fetch(`${CORE_BACKEND_URL}/api/asistente/voz`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'success') {
+        // Mostramos el texto que nos devuelve la IA y reproducimos el Base64
+        setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: data.data.ai_text }]);
+        playAiAudio(data.data.ai_audio_base64);
+      } else {
+        setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'No pude procesar el audio correctamente.' }]);
+      }
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'Error de conexión con el servidor.' }]);
+    } finally {
+      setIsTyping(false);
+      scrollToBottom();
+    }
+  };
+
+ const playAiAudio = async (base64Audio: string) => {
+    try {
+      // Usamos FileSystem.cacheDirectory
+      const uri = FileSystem.cacheDirectory + 'ai_response.mp3';
+      
+      // Usamos FileSystem.writeAsStringAsync y FileSystem.EncodingType
+      await FileSystem.writeAsStringAsync(uri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
+
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      setSound(newSound);
+      await newSound.playAsync();
+    } catch (error) {
+      console.error('Error reproduciendo el audio', error);
     }
   };
 
@@ -147,16 +200,9 @@ export default function AsistenteScreen() {
     <SafeAreaView style={styles.container}>
       {/* ── Top nav ── */}
       <View style={styles.topNav}>
-        <TouchableOpacity
-  style={styles.menuBtn}
-  onPress={() => router.replace('/resultado')}
->
-  <Ionicons
-    name="arrow-back"
-    size={22}
-    color={C.greenD}
-  />
-</TouchableOpacity>
+        <TouchableOpacity style={styles.menuBtn} onPress={() => router.replace('/resultado')}>
+          <Ionicons name="arrow-back" size={22} color={C.greenD} />
+        </TouchableOpacity>
         <Text style={styles.brandName}>InkaVoice</Text>
         <View style={styles.topNavRight}>
           <TouchableOpacity style={styles.iconBtn}><Ionicons name="search-outline" size={22} color={C.dark} /></TouchableOpacity>

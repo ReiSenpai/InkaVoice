@@ -10,17 +10,17 @@ app = FastAPI(
 )
 
 # --- CONFIGURACIÓN DE CORS ---
-# Esto permite que tu archivo HTML pueda conectarse a la API sin ser bloqueado
+# Esto permite que tu archivo HTML o tu Spring Boot puedan conectarse a la API sin ser bloqueados
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite conexiones desde cualquier origen (ej. tu archivo HTML local)
-    allow_credentials=True,
+    allow_origins=["*"],  # Permite conexiones desde cualquier origen
+    allow_credentials=False, # <-- CORREGIDO: Debe ser False para que no colapse con allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
 # -----------------------------
 
-# Conectar las rutas modulares al servidor principal[cite: 1]
+# Conectar las rutas modulares al servidor principal
 app.include_router(voice_router, prefix="/api/v1/voice", tags=["Voice Assistant"])
 app.include_router(vision_router, prefix="/api/v1/vision", tags=["Visual Guide"])
 
@@ -28,7 +28,7 @@ app.include_router(vision_router, prefix="/api/v1/vision", tags=["Visual Guide"]
 def health_check():
     return {"status": "ok", "message": "InkaVoice AI Backend operando correctamente"}
 
-# Para ejecutar localmente (python main.py)[cite: 1]
+# Para ejecutar localmente (python main.py)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

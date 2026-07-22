@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, StatusBar, Dimensions, Image, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,7 +14,8 @@ const FRAME = width * 0.75;
 export default function CameraScreen() {
   const navigation = useNavigation<any>();
   const { alert } = useAlert();
-  const { t } = useLanguage();
+  // Extraemos el idioma del contexto para enviarlo al backend
+  const { t, language } = useLanguage(); 
   const { colors } = useTheme();
   const C = { dark: colors.greenDark, green: colors.green, gold: colors.gold, goldL: colors.goldLight, white: colors.beige, gray: colors.gray400 };
 
@@ -43,7 +44,7 @@ export default function CameraScreen() {
     resultRow: { position: 'absolute', bottom: 175, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 10 },
     resultPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,51,45,0.9)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 30, gap: 8, borderWidth: 1, borderColor: C.gold },
     resultDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' },
-    resultText: { color: C.white, fontSize: 13, fontWeight: '600' },
+    resultText: { color: C.white, fontSize: 13, fontWeight: '600', maxWidth: 220 },
     retryBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,51,45,0.9)', borderWidth: 1, borderColor: C.gold, alignItems: 'center', justifyContent: 'center' },
     controls: { position: 'absolute', bottom: 60, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center' },
     sideBtn: { alignItems: 'center', gap: 4 },
@@ -58,31 +59,78 @@ export default function CameraScreen() {
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  
+  // Estado para la respuesta de la IA
+  const [aiResult, setAiResult] = useState<string | null>(null); 
+  
   const cameraRef = useRef<CameraView>(null);
 
   const progress = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scanLineY = useRef(new Animated.Value(0)).current;
 
-  const runScanAnimation = () => {
-    setScanning(true);
-    setScanned(false);
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.03, duration: 600, useNativeDriver: true }),
-      Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-    ])).start();
-    Animated.loop(Animated.sequence([
-      Animated.timing(scanLineY, { toValue: 1, duration: 1500, useNativeDriver: false }),
-      Animated.timing(scanLineY, { toValue: 0, duration: 1500, useNativeDriver: false }),
-    ])).start();
-    progress.setValue(0);
-    Animated.timing(progress, { toValue: 1, duration: 3200, useNativeDriver: false }).start(() => {
+  // Lógica de comunicación con el Core Backend (Spring Boot)
+  const analyzeImageAPI = async (uri: string) => {
+    try {
+      const CORE_BACKEND_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+      
+      const formData = new FormData();
+      formData.append('language', language);
+      formData.append('image', {
+        uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+        type: 'image/jpeg',
+        name: 'scan.jpg',
+      } as any);
+
+      const response = await fetch(`${CORE_BACKEND_URL}/api/asistente/vision`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          // 'Authorization': `Bearer ${token}` // Descomentar e inyectar cuando implementes Auth
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.status === 'success') {
+        setAiResult(data.data.description);
+      } else {
+        setAiResult("No se pudo identificar el lugar.");
+      }
+    } catch (error) {
+      console.error(error);
+      setAiResult("Error de conexión.");
+    } finally {
       setScanning(false);
       setScanned(true);
       pulseAnim.stopAnimation();
       pulseAnim.setValue(1);
       scanLineY.stopAnimation();
-    });
+    }
+  };
+
+  const runScanAnimation = (photoUri: string) => {
+    setScanning(true);
+    setScanned(false);
+    setAiResult(null);
+
+    Animated.loop(Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1.03, duration: 600, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ])).start();
+    
+    Animated.loop(Animated.sequence([
+      Animated.timing(scanLineY, { toValue: 1, duration: 1500, useNativeDriver: false }),
+      Animated.timing(scanLineY, { toValue: 0, duration: 1500, useNativeDriver: false }),
+    ])).start();
+    
+    progress.setValue(0);
+    // Aumentamos la duración visual o dejamos que analyzeImageAPI la detenga
+    Animated.timing(progress, { toValue: 1, duration: 3200, useNativeDriver: false }).start();
+
+    // Lanzar API en paralelo
+    analyzeImageAPI(photoUri);
   };
 
   const startScan = async () => {
@@ -91,7 +139,7 @@ export default function CameraScreen() {
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
-        alert(t('alert_mic_permission_title'), t('alert_camera_permission_message'));
+        alert(t('alert_mic_permission_title') || 'Permiso denegado', t('alert_camera_permission_message') || 'Se requiere acceso a la cámara');
         return;
       }
     }
@@ -101,19 +149,18 @@ export default function CameraScreen() {
         const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
         if (photo?.uri) {
           setCapturedUri(photo.uri);
+          runScanAnimation(photo.uri);
         }
       }
     } catch (e) {
-      // Si falla la captura seguimos con el escaneo simulado sobre el feed en vivo
+      console.error("Error al capturar imagen:", e);
     }
-
-    runScanAnimation();
   };
 
   const pickFromGallery = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      alert(t('alert_mic_permission_title'), t('alert_gallery_permission_message'));
+      alert(t('alert_mic_permission_title') || 'Permiso denegado', t('alert_gallery_permission_message') || 'Se requiere acceso a la galería');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -122,7 +169,7 @@ export default function CameraScreen() {
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
       setCapturedUri(result.assets[0].uri);
-      runScanAnimation();
+      runScanAnimation(result.assets[0].uri);
     }
   };
 
@@ -133,12 +180,12 @@ export default function CameraScreen() {
   const resetScan = () => {
     setScanned(false);
     setCapturedUri(null);
+    setAiResult(null);
   };
 
   const progressWidth = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   const scanTop = scanLineY.interpolate({ inputRange: [0, 1], outputRange: ['0%', '95%'] });
 
-  // Aún no sabemos si hay permiso (primera carga)
   if (!permission) {
     return <View style={styles.container} />;
   }
@@ -165,6 +212,7 @@ export default function CameraScreen() {
             <Ionicons name="settings-outline" size={22} color={C.white} />
           </TouchableOpacity>
         </View>
+        
         <Animated.View style={[styles.scanFrame, { transform: [{ scale: pulseAnim }] }]}>
           <View style={[styles.corner, styles.cornerTL]} />
           <View style={[styles.corner, styles.cornerTR]} />
@@ -173,6 +221,7 @@ export default function CameraScreen() {
           <Text style={styles.scanLabel}>{scanned ? '✓ SITIO IDENTIFICADO' : scanning ? 'ESCANEANDO...' : 'APUNTA AL SITIO'}</Text>
           {scanning && <Animated.View style={[styles.scanLine, { top: scanTop }]} />}
         </Animated.View>
+
         {scanning && (
           <View style={styles.progressContainer}>
             <Text style={styles.progressLabel}>🔍 Escaneando Patrimonio...</Text>
@@ -181,11 +230,18 @@ export default function CameraScreen() {
             </View>
           </View>
         )}
+
         {scanned && (
           <View style={styles.resultRow}>
-            <TouchableOpacity style={styles.resultPill} onPress={() => navigation.navigate('Resultado', { photoUri: capturedUri })}>
+            {/* Enviamos el aiResult a la pantalla de Resultado por parámetros de navegación */}
+            <TouchableOpacity 
+              style={styles.resultPill} 
+              onPress={() => navigation.navigate('Resultado', { photoUri: capturedUri, aiDescription: aiResult })}
+            >
               <View style={styles.resultDot} />
-              <Text style={styles.resultText}>Intihuatana · 98% — Ver detalles →</Text>
+              <Text style={styles.resultText} numberOfLines={1}>
+                {aiResult ? aiResult : 'Ver detalles'} →
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.retryBtn} onPress={resetScan}>
               <Ionicons name="refresh" size={18} color={C.white} />
@@ -194,6 +250,7 @@ export default function CameraScreen() {
         )}
         <View style={styles.bottomGradient} />
       </View>
+      
       <View style={styles.controls}>
         <TouchableOpacity style={styles.sideBtn} onPress={pickFromGallery}>
           <Ionicons name="images-outline" size={26} color={C.white} />

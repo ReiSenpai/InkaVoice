@@ -80,7 +80,8 @@ const LANGUAGES: Lang[] = ['Español', 'English', 'Quechua'];
 
 export default function ResultadoScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  // Recibimos los parámetros dinámicos de la cámara
+  const { photoUri, aiDescription } = useLocalSearchParams<{ photoUri?: string, aiDescription?: string }>();
 
   const [language, setLanguage]           = useState<Lang>('Español');
   const [translating, setTranslating]     = useState(false);
@@ -103,7 +104,7 @@ export default function ResultadoScreen() {
 
       {/* ── Hero Image ── */}
       <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }}
+        source={{ uri: photoUri || 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000' }}
         style={styles.backgroundImage}
       >
         <View style={styles.header}>
@@ -114,7 +115,7 @@ export default function ResultadoScreen() {
           <Ionicons name="settings-outline" size={24} color={C.white} />
         </View>
         <View style={styles.recognitionBadge}>
-          <Text style={styles.recognitionText}>● RECONOCIMIENTO 98%</Text>
+          <Text style={styles.recognitionText}>● RECONOCIMIENTO {aiDescription ? '100%' : '98%'}</Text>
         </View>
       </ImageBackground>
 
@@ -126,7 +127,7 @@ export default function ResultadoScreen() {
             <Text style={styles.badgeText}>{content.region}</Text>
           </View>
 
-          <Text style={styles.title}>{content.title}</Text>
+          <Text style={styles.title}>{aiDescription ? 'Descubrimiento IA' : content.title}</Text>
 
           {language !== 'Español' && (
             <View style={styles.activeLangBadge}>
@@ -164,8 +165,10 @@ export default function ResultadoScreen() {
           ) : (
             <>
               <Text style={styles.sectionTitle}>{content.sectionHistory}</Text>
-              <Text style={styles.bodyText}>{content.history1}</Text>
-              <Text style={styles.bodyText}>{content.history2}</Text>
+              
+              {/* Mostramos la respuesta de la IA si existe, si no, el texto por defecto */}
+              <Text style={styles.bodyText}>{aiDescription || content.history1}</Text>
+              {!aiDescription && <Text style={styles.bodyText}>{content.history2}</Text>}
 
               <View style={styles.divider} />
 

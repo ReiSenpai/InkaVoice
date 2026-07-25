@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "inkavoice-frontend",
+    "slug": "inkavoice-frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/android-icon-foreground.png",
+    "scheme": "inkavoicefrontend",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.inkavoicefrontend",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCZdOZn7B0xMOD9T1BzVBiSMderywo0jk8"
+        }
+      }
+    },
+    "web": {
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#208AEF",
+          "android": {
+            "image": "./assets/android-icon-foreground.png",
+            "imageWidth": 76
+          }
+        }
+      ],
+      "expo-audio",
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": false,
+      "reactCompiler": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "db40a0af-7a49-48d5-a9a7-ed10631dfe5d"
+      }
+    }
+  }
+}

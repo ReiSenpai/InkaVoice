@@ -1,0 +1,595 @@
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Image,
+  Dimensions,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+const { width } = Dimensions.get('window');
+
+const C = {
+  bg: '#F7F4F2',
+  green: '#1E5A46',
+  gold: '#D8B347',
+  text: '#10261D',
+  muted: '#6E7773',
+  white: '#FFF',
+  border: '#E5E5E5',
+};
+
+const ROUTES = [
+  {
+    id: 1,
+    title: 'Dunas de Ica y Oasis',
+    subtitle: 'Huacachina y Paracas',
+    region: 'Costa',
+    duration: '2 Días',
+    level: 'Fácil',
+    image:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
+  },
+  {
+    id: 2,
+    title: 'Valle Sagrado',
+    subtitle: 'Cusco',
+    region: 'Sierra',
+    duration: '4 Días',
+    level: 'Media',
+    image:
+      'https://images.unsplash.com/photo-1587595431973-160d0d94add1',
+  },
+  {
+    id: 3,
+    title: 'Reserva Amazónica',
+    subtitle: 'Madre de Dios',
+    region: 'Selva',
+    duration: '3 Días',
+    level: 'Media',
+    image:
+      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e',
+  },
+];
+
+export default function RecorridoScreen() {
+  const router = useRouter();
+
+  const [filter, setFilter] =
+    useState('Todas');
+
+  const [search, setSearch] =
+    useState('');
+
+  const routes = useMemo(() => {
+    return ROUTES.filter(r => {
+      const regionOk =
+        filter === 'Todas'
+          ? true
+          : r.region === filter;
+
+      const textOk =
+        r.title
+          .toLowerCase()
+          .includes(
+            search.toLowerCase()
+          );
+
+      return regionOk && textOk;
+    });
+  }, [filter, search]);
+
+  return (
+    <View style={styles.container}>
+
+      <ScrollView
+        showsVerticalScrollIndicator={
+          false
+        }
+      >
+
+        {/* HEADER */}
+
+        <View style={styles.header}>
+
+          <TouchableOpacity
+            onPress={() =>
+              router.back()
+            }
+          >
+            <Ionicons
+              name="close"
+              size={28}
+              color={C.green}
+            />
+          </TouchableOpacity>
+
+          <Text style={styles.logo}>
+            InkaVoice
+          </Text>
+
+          <Image
+            source={{
+              uri:
+                'https://i.pravatar.cc/100',
+            }}
+            style={
+              styles.avatar
+            }
+          />
+
+        </View>
+
+        {/* TITULO */}
+
+        <Text style={styles.title}>
+          Planifica tu Expedición
+        </Text>
+
+        {/* BUSCAR */}
+
+        <View style={styles.search}>
+
+          <Ionicons
+            name="search"
+            size={20}
+            color="#777"
+          />
+
+          <TextInput
+            value={search}
+            onChangeText={
+              setSearch
+            }
+            placeholder="Busca tu próxima ruta..."
+            placeholderTextColor="#999"
+            style={
+              styles.input
+            }
+          />
+
+        </View>
+
+        {/* FILTROS */}
+
+        <TouchableOpacity
+          style={
+            styles.filterBtn
+          }
+        >
+          <Ionicons
+            name="options"
+            size={18}
+            color="#FFF"
+          />
+
+          <Text
+            style={
+              styles.filterText
+            }
+          >
+            Filtros
+          </Text>
+
+        </TouchableOpacity>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={
+            false
+          }
+          contentContainerStyle={{
+            gap: 12,
+            paddingTop: 18,
+          }}
+        >
+
+          {[
+            'Todas',
+            'Costa',
+            'Sierra',
+            'Selva',
+          ].map(v => (
+
+            <TouchableOpacity
+              key={v}
+              style={[
+                styles.tab,
+                filter === v &&
+                  styles.tabActive,
+              ]}
+              onPress={() =>
+                setFilter(v)
+              }
+            >
+
+              <Text
+                style={[
+                  styles.tabText,
+                  filter ===
+                    v && {
+                    color:
+                      C.green,
+                  },
+                ]}
+              >
+                {v}
+              </Text>
+
+            </TouchableOpacity>
+
+          ))}
+
+        </ScrollView>
+
+        {/* RUTAS */}
+
+        <View
+          style={
+            styles.sectionHeader
+          }
+        >
+
+          <Text
+            style={
+              styles.section
+            }
+          >
+            Rutas Cercanas
+          </Text>
+
+          <TouchableOpacity>
+
+            <Text
+              style={
+                styles.link
+              }
+            >
+              Ver todas
+            </Text>
+
+          </TouchableOpacity>
+
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={
+            false
+          }
+        >
+
+          {routes.map(r => (
+
+            <TouchableOpacity
+              key={r.id}
+              style={
+                styles.card
+              }
+              onPress={() =>
+                router.push(
+                  '/asistente'
+                )
+              }
+            >
+
+              <Image
+                source={{
+                  uri:
+                    r.image,
+                }}
+                style={
+                  styles.cardImage
+                }
+              />
+
+              <View
+                style={
+                  styles.badge
+                }
+              >
+
+                <Text>
+                  {r.region}
+                </Text>
+
+              </View>
+
+              <View
+                style={
+                  styles.cardBody
+                }
+              >
+
+                <Text
+                  style={
+                    styles.cardTitle
+                  }
+                >
+                  {r.title}
+                </Text>
+
+                <Text
+                  style={
+                    styles.cardSub
+                  }
+                >
+                  {r.subtitle}
+                </Text>
+
+                <Text
+                  style={
+                    styles.meta
+                  }
+                >
+                  {r.duration} · {r.level}
+                </Text>
+
+                <TouchableOpacity
+                  style={
+                    styles.detailBtn
+                  }
+                >
+
+                  <Text>
+                    Ver Detalle
+                  </Text>
+
+                </TouchableOpacity>
+
+              </View>
+
+            </TouchableOpacity>
+
+          ))}
+
+        </ScrollView>
+
+        {/* NUEVAS */}
+
+        <Text
+          style={[
+            styles.section,
+            {
+              marginTop:
+                30,
+            },
+          ]}
+        >
+          Nuevas Experiencias
+        </Text>
+
+        <View
+          style={
+            styles.experience
+          }
+        >
+
+          <Text
+            style={
+              styles.expTitle
+            }
+          >
+            Explora rutas con IA
+          </Text>
+
+          <Text
+            style={
+              styles.expSub
+            }
+          >
+            Recorridos personalizados
+          </Text>
+
+        </View>
+
+      </ScrollView>
+
+      {/* FAB */}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() =>
+          router.push(
+            '/asistente'
+          )
+        }
+      >
+
+        <Ionicons
+          name="add"
+          size={32}
+          color="#FFF"
+        />
+
+      </TouchableOpacity>
+
+    </View>
+  );
+}
+
+const styles =
+StyleSheet.create({
+
+container:{
+flex:1,
+backgroundColor:C.bg,
+paddingTop:55,
+},
+
+header:{
+paddingHorizontal:18,
+flexDirection:'row',
+justifyContent:'space-between',
+alignItems:'center',
+},
+
+logo:{
+fontSize:28,
+fontWeight:'800',
+color:C.green,
+},
+
+avatar:{
+width:40,
+height:40,
+borderRadius:20,
+},
+
+title:{
+padding:18,
+fontSize:50,
+fontWeight:'800',
+color:C.text,
+},
+
+search:{
+marginHorizontal:18,
+height:54,
+backgroundColor:'#FFF',
+borderRadius:27,
+paddingHorizontal:18,
+alignItems:'center',
+flexDirection:'row',
+},
+
+input:{
+flex:1,
+marginLeft:10,
+},
+
+filterBtn:{
+marginLeft:18,
+marginTop:18,
+width:120,
+height:48,
+borderRadius:24,
+backgroundColor:C.green,
+justifyContent:'center',
+alignItems:'center',
+flexDirection:'row',
+gap:8,
+},
+
+filterText:{
+color:'#FFF',
+},
+
+tab:{
+borderWidth:1,
+borderColor:'#CCC',
+paddingHorizontal:18,
+height:42,
+borderRadius:22,
+justifyContent:'center',
+},
+
+tabActive:{
+borderColor:C.green,
+},
+
+tabText:{
+color:'#666',
+},
+
+sectionHeader:{
+padding:18,
+flexDirection:'row',
+justifyContent:'space-between',
+},
+
+section:{
+fontSize:36,
+fontWeight:'800',
+color:C.text,
+},
+
+link:{
+color:C.green,
+},
+
+card:{
+width:300,
+marginLeft:18,
+backgroundColor:'#FFF',
+borderRadius:30,
+overflow:'hidden',
+},
+
+cardImage:{
+width:'100%',
+height:260,
+},
+
+badge:{
+position:'absolute',
+top:18,
+left:18,
+backgroundColor:'#FFF',
+paddingHorizontal:14,
+paddingVertical:6,
+borderRadius:20,
+},
+
+cardBody:{
+padding:18,
+},
+
+cardTitle:{
+fontSize:26,
+fontWeight:'700',
+},
+
+cardSub:{
+color:C.muted,
+},
+
+meta:{
+marginTop:10,
+},
+
+detailBtn:{
+marginTop:20,
+height:48,
+borderRadius:24,
+backgroundColor:'#F4F4F4',
+justifyContent:'center',
+alignItems:'center',
+},
+
+experience:{
+margin:18,
+backgroundColor:'#FFF',
+padding:24,
+borderRadius:26,
+marginBottom:120,
+},
+
+expTitle:{
+fontSize:24,
+fontWeight:'700',
+},
+
+expSub:{
+marginTop:8,
+color:C.muted,
+},
+
+fab:{
+position:'absolute',
+right:22,
+bottom:40,
+width:72,
+height:72,
+borderRadius:36,
+backgroundColor:C.green,
+justifyContent:'center',
+alignItems:'center',
+},
+
+});

@@ -1,18 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useUser } from '../context/UserContext';
-import { useLanguage } from '../context/LanguageContext';
-import { getInitials } from '../utils/initials';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useUser } from '../../context/UserContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { getInitials } from '../../../utils/initials';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTour } from '../context/TourContext';
-import { MINI_TOUR_BAR_HEIGHT, MINI_TOUR_BAR_GAP } from '../components/MiniTourBar';
-import { SITES } from './MapaScreen';
-import { useTheme } from '../context/ThemeContext';
-
-const { width } = Dimensions.get('window');
-
+import { useTour } from '../../context/TourContext';
+import { MINI_TOUR_BAR_HEIGHT, MINI_TOUR_BAR_GAP } from '../../components/MiniTourBar';
+import { SITES } from '../(tabs)/mapa'; 
+import { useTheme } from '../../context/ThemeContext';
 
 const ROUTES = [
   { id: 1, title: 'Dunas de Ica y Oasis', subtitle: 'Huacachina y Paracas', region: 'Costa', duration: '2 Días', level: 'Fácil', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee', stopIds: [5, 4] },
@@ -21,8 +18,8 @@ const ROUTES = [
 ];
 
 export default function RecorridoScreen() {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ region?: string, siteName?: string }>();
   const { photoUri, name } = useUser();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -34,21 +31,19 @@ export default function RecorridoScreen() {
     green: colors.green, 
     gold: colors.gold, 
     text: colors.greenDark, 
-    muted: colors.muted, 
+    muted: colors.gray500, 
     white: colors.white, 
     border: colors.border 
   };
 
   const extraTopSpace = isTourActive ? MINI_TOUR_BAR_HEIGHT + MINI_TOUR_BAR_GAP : 0;
 
-  // Si venimos del mapa con una región/sitio específico, arrancamos ya filtrados.
-  const incomingRegion: string | undefined = route.params?.region;
-  const incomingSiteName: string | undefined = route.params?.siteName;
+  const incomingRegion = params.region;
+  const incomingSiteName = params.siteName;
 
   const [filter, setFilter] = useState(incomingRegion ?? 'Todas');
   const [search, setSearch] = useState('');
 
-  // Si la pantalla ya estaba montada y llega un nuevo parámetro, actualizamos el filtro.
   useEffect(() => {
     if (incomingRegion) setFilter(incomingRegion);
   }, [incomingRegion]);
@@ -59,16 +54,14 @@ export default function RecorridoScreen() {
     return regionOk && textOk;
   }), [filter, search]);
 
-  // Arranca un recorrido real (GPS + progreso) para la ruta elegida
   const handleStartRecorrido = (r: (typeof ROUTES)[number]) => {
-    const stops = SITES.filter(s => r.stopIds.includes(s.id));
+    const stops = SITES ? SITES.filter((s: any) => r.stopIds.includes(s.id)) : [];
     if (!stops.length) {
-      Alert.alert('Ruta sin paradas', 'Esta ruta todavía no tiene paradas configuradas.');
-      return;
+      Alert.alert('Aviso', 'Iniciando ruta sin paradas específicas.');
     }
     const begin = () => {
       startTour({ routeName: r.title, region: r.region, stops });
-      navigation.navigate('RecorridoEnCurso');
+      router.push('/recorrido-en-curso');
     };
     if (isTourActive) {
       Alert.alert('Ya tienes un recorrido en curso', '¿Quieres terminarlo y empezar este?', [
@@ -122,7 +115,7 @@ export default function RecorridoScreen() {
     <View style={[styles.container, { paddingTop: insets.top + 12 + extraTopSpace }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => router.push('/')}>
             <Ionicons name="close" size={28} color={C.green} />
           </TouchableOpacity>
           <Text style={styles.logo}>InkaVoice</Text>
@@ -203,7 +196,7 @@ export default function RecorridoScreen() {
 
                   <TouchableOpacity 
                     style={styles.detailBtn} 
-                    onPress={() => navigation.navigate('Asistente', { siteName: r.title })}
+                    onPress={() => router.push({ pathname: '/asistente', params: { siteName: r.title } })}
                   >
                     <Text>{t('routes_view_detail')}</Text>
                   </TouchableOpacity>
@@ -213,7 +206,7 @@ export default function RecorridoScreen() {
           </ScrollView>
         )}
 
-        <Text style={[styles.section, { marginTop: 30 }]}>{t('routes_new_experiences')}</Text>
+        <Text style={[styles.section, { marginTop: 30, marginLeft: 18 }]}>{t('routes_new_experiences')}</Text>
         <View style={styles.experience}>
           <Text style={styles.expTitle}>{t('routes_ai_explore')}</Text>
           <Text style={styles.expSub}>{t('routes_personalized')}</Text>
@@ -222,7 +215,7 @@ export default function RecorridoScreen() {
 
       <TouchableOpacity 
         style={styles.fab} 
-        onPress={() => navigation.navigate('Asistente', incomingSiteName ? { siteName: incomingSiteName } : undefined)}
+        onPress={() => router.push({ pathname: '/asistente', params: incomingSiteName ? { siteName: incomingSiteName } : {} })}
       >
         <Ionicons name="add" size={32} color="#FFF" />
       </TouchableOpacity>

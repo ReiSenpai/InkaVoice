@@ -5,6 +5,8 @@ type UserContextType = {
   setPhotoUri: (uri: string | null) => void;
   name: string;
   setName: (name: string) => void;
+  userId: string; // <-- Agregado
+  setUserId: (id: string) => void; // <-- Agregado
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -12,9 +14,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [name, setName] = useState('Nombre de Usuario');
+  const [userId, setUserId] = useState<string>('1'); // <-- Agregado (1 por defecto para pruebas)
 
   return (
-    <UserContext.Provider value={{ photoUri, setPhotoUri, name, setName }}>
+    <UserContext.Provider value={{ photoUri, setPhotoUri, name, setName, userId, setUserId }}> {/* <-- Agregados al value */}
       {children}
     </UserContext.Provider>
   );

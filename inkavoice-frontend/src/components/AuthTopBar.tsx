@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../../../theme/colors';
+import { colors } from '../../theme/colors';
 
 type AuthTopBarProps = {
   actionLabel: string;

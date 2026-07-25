@@ -43,7 +43,7 @@ public class AiProxyController {
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
         
         try {
-            String urlDestino = aiBackendUrl + "/api/voice/process";
+            String urlDestino = aiBackendUrl + "/api/v1/voice/process/";
             ResponseEntity<String> response = restTemplate.postForEntity(urlDestino, requestEntity, String.class);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
@@ -75,11 +75,42 @@ public class AiProxyController {
         
         try {
             // Asegúrate de que la ruta coincida con el @PostMapping de routes_vision.py
-            String urlDestino = aiBackendUrl + "/api/vision/analyze/"; 
+            String urlDestino = aiBackendUrl + "/api/v1/vision/analyze/"; 
             ResponseEntity<String> response = restTemplate.postForEntity(urlDestino, requestEntity, String.class);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("message", "Error al comunicarse con el servidor de IA"));
+        }
+    }
+
+    // --- ENDPOINT PARA TEXT-TO-SPEECH (AUDIOGUÍA) ---
+    @PostMapping(value = "/tts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> textToSpeech(
+            @RequestParam("text") String text,
+            @RequestParam("language") String language,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) { // <-- SE AGREGÓ EL HEADER AQUÍ
+        
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        
+        // <-- SE AGREGÓ LA VALIDACIÓN DEL HEADER AQUÍ
+        if (authHeader != null) {
+            headers.set("Authorization", authHeader);
+        }
+        
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("text", text);
+        body.add("language", language);
+        
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+        
+        try {
+            String urlDestino = aiBackendUrl + "/api/v1/voice/tts/";
+            ResponseEntity<String> response = restTemplate.postForEntity(urlDestino, requestEntity, String.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Error al comunicarse con el servidor de IA para TTS"));
         }
     }
 }

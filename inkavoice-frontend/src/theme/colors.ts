@@ -1,4 +1,4 @@
-export const colors = {
+export const lightColors = {
   green: '#053528',
   greenDark: '#002b1b',
   gold: '#9a8447',
@@ -8,11 +8,37 @@ export const colors = {
   muted: '#6b7280',
   background: '#f4f5f7',
   white: '#ffffff',
+  textOnDark: '#ffffff',
+  surface: '#ffffff',
   gray100: '#f3f4f6',
   gray200: '#e5e7eb',
   gray400: '#9ca3af',
   gray500: '#6b7280',
   gray600: '#4b5563',
+  textPrimary: '#1a1a1a',
   beige: '#f5f0e8',
   badgeYellow: '#e8c547',
 };
+export const darkColors = {
+  textPrimary: '#f5f5f5',
+  green: '#4ade80',
+  greenDark: '#12261c',
+  gold: '#c4a962',
+  goldLight: '#e8c547',
+  teal: '#2dd4bf',
+  border: '#2d2d2d',
+  muted: '#9ca3af',
+  background: '#121212',
+  white: '#242424',
+  textOnDark: '#ffffff',
+  surface: '#1e1e1e',
+  gray100: '#2a2a2a',
+  gray200: '#333333',
+  gray400: '#8a8a8a',
+  gray500: '#a0a0a0',
+  gray600: '#c0c0c0',
+  beige: '#2a2620',
+  badgeYellow: '#c9a227',
+};
+// Export estático por compatibilidad con código que aún no usa el hook useTheme()
+export const colors = lightColors;

@@ -7,10 +7,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useUser } from '../../context/UserContext'; // <-- IMPORTAMOS EL CONTEXTO
 
 const { width } = Dimensions.get('window');
 const FRAME = width * 0.75;
-const API_URL = 'http://192.168.1.36:3000/api/asistente/vision'; 
+
+// 🧠 APUNTANDO AL BACKEND PYTHON (FastAPI - IA Vision)
+const API_URL = 'http://192.168.1.36:8000/api/v1/vision/analyze/'; 
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -18,6 +21,9 @@ export default function CameraScreen() {
   const { language } = useLanguage();
   const { colors } = useTheme();
   
+  // EXTRAEMOS EL TOKEN DE SESIÓN
+  const { token } = useUser();
+
   const C = {
     green: '#00332D',
     gold: '#C9A84C',
@@ -74,7 +80,11 @@ export default function CameraScreen() {
       const response = await fetch(API_URL, {
         method: 'POST',
         body: formData,
-        headers: { 'Accept': 'application/json' },
+        headers: { 
+            'Accept': 'application/json',
+            // ENVIAMOS EL TOKEN DE SEGURIDAD
+            'Authorization': `Bearer ${token}` 
+        },
       });
 
       const data = await response.json();

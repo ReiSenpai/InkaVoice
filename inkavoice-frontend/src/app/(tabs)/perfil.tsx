@@ -18,6 +18,7 @@ export default function ProfileScreen() {
 
   // Estados del Perfil
   const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState(name || 'Cargando...'); // <--- Estado para el nombre real
   const [bio, setBio] = useState('Explorador incansable de las rutas del Qhapaq Ñan. Documentando memorias sonoras desde el Coricancha hasta Choquequirao.');
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [tempBio, setTempBio] = useState('');
@@ -34,11 +35,15 @@ export default function ProfileScreen() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`${CORE_BACKEND_URL}/api/usuarios/${userId || 1}/perfil`);
+        const response = await fetch(`${CORE_BACKEND_URL}/api/perfil/${userId || 1}`);
         if (response.ok) {
           const data = await response.json();
+          // Actualizar datos desde la base de datos
+          if (data.nombre) setUserName(data.nombre);
+          else if (data.name) setUserName(data.name);
+          
           if (data.bio) setBio(data.bio);
-          if (data.memorias) setMemories(data.memorias);
+          if (data.memorias && data.memorias.length > 0) setMemories(data.memorias);
         }
       } catch (error) {
         console.log("Cargando datos locales (Fallback)");
@@ -47,7 +52,27 @@ export default function ProfileScreen() {
       }
     };
     fetchUserData();
-  }, []);
+  }, [userId]);
+
+  // 📸 Cambiar Foto de Perfil
+  const changeProfilePhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert('Permiso denegado', 'Necesitamos acceso a tus fotos para cambiar tu perfil.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1], // Fuerza formato cuadrado
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setPhotoUri(result.assets[0].uri);
+      // Aquí podrías agregar un fetch para enviar la nueva foto a Spring Boot si lo deseas
+    }
+  };
 
   // 💾 Guardar Biografía en el Backend
   const saveBio = async () => {
@@ -78,15 +103,17 @@ export default function ProfileScreen() {
 
     if (!result.canceled && result.assets?.[0]?.uri) {
       const newUri = result.assets[0].uri;
-      // Actualizamos UI inmediatamente
       const newMemory = { id: Date.now().toString(), title: 'Nueva Memoria', region: 'DESCUBRIMIENTO', image: newUri };
       setMemories([newMemory, ...memories]);
 
-      // Subimos imagen al backend
       try {
         const formData = new FormData();
-        formData.append('image', { uri: newUri, type: 'image/jpeg', name: 'memoria.jpg' } as any);
-        formData.append('userId', userId);
+        formData.append('image', { 
+            uri: Platform.OS === 'ios' ? newUri.replace('file://', '') : newUri, 
+            type: 'image/jpeg', 
+            name: 'memoria.jpg' 
+        } as any);
+        formData.append('usuarioId', String(userId || 1));
         
         await fetch(`${CORE_BACKEND_URL}/api/memorias/crear`, {
           method: 'POST',
@@ -105,18 +132,22 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <TouchableOpacity hitSlop={10}><Ionicons name="search" size={24} color={C.greenDark} /></TouchableOpacity>
         <Text style={styles.headerTitle}>InkaVoice</Text>
-        <TouchableOpacity onPress={() => router.push('/settings')} hitSlop={10}><Ionicons name="settings-outline" size={24} color={C.greenDark} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/settings')} hitSlop={10}>
+          <Ionicons name="settings-outline" size={24} color={C.greenDark} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* AVATAR Y NOMBRE */}
+        {/* AVATAR Y NOMBRE MODIFICADOS */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarWrapper}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={changeProfilePhoto} activeOpacity={0.8}>
             <Image source={{ uri: photoUri || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400' }} style={styles.avatarImage} />
-            <View style={styles.avatarBadge}><Ionicons name="mic" size={12} color="#FFF" /></View>
-          </View>
-          <Text style={styles.name}>{name}</Text>
+            <View style={styles.avatarBadge}><Ionicons name="camera" size={14} color="#FFF" /></View>
+          </TouchableOpacity>
+          
+          <Text style={styles.name}>{userName}</Text>
+          
           <View style={styles.rolePill}>
             <Ionicons name="sparkles" size={12} color="#FFF" />
             <Text style={styles.roleText}>Guardián del Patrimonio</Text>
@@ -128,7 +159,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ESTADÍSTICAS (Diseño Vertical) */}
+        {/* ESTADÍSTICAS */}
         <View style={styles.statsContainer}>
           <View style={styles.statRowCard}>
             <View style={styles.statIconBox}><Ionicons name="location-outline" size={20} color={C.muted} /></View>
@@ -136,7 +167,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statRowCard}>
             <View style={styles.statIconBox}><Ionicons name="mic-outline" size={20} color={C.gold} /></View>
-            <View><Text style={styles.statValue}>156</Text><Text style={styles.statLabel}>MEMORIAS</Text></View>
+            <View><Text style={styles.statValue}>{memories.length}</Text><Text style={styles.statLabel}>MEMORIAS</Text></View>
           </View>
           <View style={styles.statRowCard}>
             <View style={styles.statIconBox}><Ionicons name="earth-outline" size={20} color={C.muted} /></View>
@@ -171,7 +202,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.badgesGrid}>
-          {/* Ejemplo de insignias fijas para la previsualización */}
           <View style={styles.badgeCard}><View style={styles.badgeIconWrap}><Ionicons name="triangle" size={28} color={C.gold} /></View><Text style={styles.badgeTitle}>Centinela de los Andes</Text></View>
           <View style={styles.badgeCard}><View style={styles.badgeIconWrap}><Ionicons name="water" size={28} color={C.gold} /></View><Text style={styles.badgeTitle}>Voz del Pacífico</Text></View>
           <View style={styles.badgeCard}><View style={styles.badgeIconWrap}><Ionicons name="document-text" size={28} color={C.gold} /></View><Text style={styles.badgeTitle}>Cronista Real</Text></View>
@@ -242,8 +272,8 @@ const styles = StyleSheet.create({
   avatarSection: { alignItems: 'center', marginBottom: 32 },
   avatarWrapper: { width: 100, height: 100, borderRadius: 24, borderWidth: 3, borderColor: '#C9A84C', padding: 2, marginBottom: 12 },
   avatarImage: { width: '100%', height: '100%', borderRadius: 20 },
-  avatarBadge: { position: 'absolute', bottom: -6, right: -6, width: 28, height: 28, borderRadius: 14, backgroundColor: '#A38A59', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FAF8F5' },
-  name: { fontSize: 26, fontWeight: '800', color: '#00332D', marginBottom: 6 },
+  avatarBadge: { position: 'absolute', bottom: -6, right: -6, width: 28, height: 28, borderRadius: 14, backgroundColor: '#00332D', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FAF8F5' },
+  name: { fontSize: 26, fontWeight: '800', color: '#00332D', marginBottom: 6, textAlign: 'center' },
   rolePill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FCD34D', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, gap: 6, marginBottom: 16 },
   roleText: { fontSize: 11, fontWeight: '800', color: '#00332D' },
   bioContainer: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 10 },

@@ -16,14 +16,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
-import * as FileSystemRaw from 'expo-file-system';
-const FileSystem = FileSystemRaw as any;
+import * as FileSystem from 'expo-file-system';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext'; // <-- IMPORTAMOS EL CONTEXTO DE USUARIO
+
+// Alias seguro para engañar a TypeScript con las versiones de Expo
+const FS: any = FileSystem; 
 
 const { width } = Dimensions.get('window');
 
-// Tipo de mensaje extendido para soportar imágenes en la respuesta de la IA
 type Message = { id: number; text: string; sender: 'ai' | 'user'; image?: string };
 
 const INITIAL: Message[] = [
@@ -34,7 +36,6 @@ const INITIAL: Message[] = [
   },
 ];
 
-// Opciones de recomendación que aparecen en el diseño
 const RECOMMENDATIONS = [
   { id: '1', title: 'Ruta de Piedra', subtitle: '45 min • Fácil', icon: 'map-outline', color: '#E8F5E9', iconColor: '#1E8A5F' },
   { id: '2', title: 'Comida Local', subtitle: 'A 200m de ti', icon: 'restaurant-outline', color: '#FFF8E1', iconColor: '#C9A84C' },
@@ -59,6 +60,9 @@ export default function AsistenteScreen() {
   const micPulse = useRef(new Animated.Value(1)).current;
   const { language } = useLanguage();
   const { colors } = useTheme();
+  
+  // EXTRAEMOS EL TOKEN DE SESIÓN
+  const { token } = useUser(); 
 
   const [messages, setMessages] = useState<Message[]>(INITIAL);
   const [isRecording, setIsRecording] = useState(false);
@@ -69,10 +73,9 @@ export default function AsistenteScreen() {
   const [recordingObject, setRecordingObject] = useState<Audio.Recording | undefined>();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
 
-  // ⚠️ APUNTANDO AL BACKEND SPRING BOOT
-  const CORE_BACKEND_URL = 'http://192.168.1.36:3000'; 
+  // 🧠 APUNTANDO AL BACKEND PYTHON (FastAPI - IA)
+  const AI_BACKEND_URL = 'http://192.168.1.36:8000';
 
-  // Colores del mockup
   const C = {
     bg: '#FAF8F5',
     greenDark: '#00332D',
@@ -85,7 +88,7 @@ export default function AsistenteScreen() {
 
   const scrollToBottom = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
-  // --- ENVÍO DE TEXTO AL BACKEND ---
+  // --- ENVÍO DE TEXTO AL BACKEND PYTHON ---
   const sendTextToBackend = async (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text }]);
@@ -95,57 +98,74 @@ export default function AsistenteScreen() {
     scrollToBottom();
 
     try {
-      // Endpoint imaginario para texto. Ajusta según tu controlador en Spring Boot
-      const response = await fetch(`${CORE_BACKEND_URL}/api/asistente/chat`, {
+      const formData = new FormData();
+      formData.append('text', text);
+      formData.append('language', language || 'es');
+
+      const response = await fetch(`${AI_BACKEND_URL}/api/v1/voice/process_text/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, language }),
+        headers: { 
+            // ENVIAMOS EL TOKEN DE SEGURIDAD
+            'Authorization': `Bearer ${token}` 
+        },
+        body: formData, 
       });
-      const data = await response.json();
       
-      // Simulación de respuesta con imagen (como en el mockup) si preguntan por Sacsayhuamán
+      const textResponse = await response.text();
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${textResponse}`);
+
+      const data = JSON.parse(textResponse);
+      
       if (text.toLowerCase().includes('sacsayhuamán') || text.toLowerCase().includes('piedras')) {
          setMessages(prev => [...prev, { 
             id: Date.now() + 1, 
             sender: 'ai', 
-            text: 'La precisión es asombrosa. Los arquitectos incas utilizaron una técnica llamada "sillar" donde las piedras se tallaban para encajar tan perfectamente que ni una hoja de papel puede pasar entre ellas. Además, su diseño en zigzag simboliza los dientes del puma, protegiendo la capital sagrada del Cusco.',
-            image: 'https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=600&q=80' // Imagen de Sacsayhuamán
+            text: data.resultado_texto || 'La precisión es asombrosa...',
+            image: 'https://images.unsplash.com/photo-1553913861-c0fddf2619ee?w=600&q=80'
          }]);
       } else {
-         setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: data.respuesta || 'Interesante, cuéntame más.' }]);
+         setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: data.resultado_texto }]);
       }
       
-      // 💾 AQUÍ PUEDES LLAMAR A TU BACKEND PARA GUARDAR EL HISTORIAL EN BASE DE DATOS
-      // fetch(`${CORE_BACKEND_URL}/api/historial/guardar`, { ... })
+      if (data.audio_base64) playAiAudio(data.audio_base64);
 
     } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'Error de conexión con la IA.' }]);
+      console.error("Error en texto:", error);
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'Error de conexión. Revisa consola.' }]);
     } finally {
       setIsTyping(false);
       scrollToBottom();
     }
   };
 
-  // --- GRABACIÓN Y ENVÍO DE VOZ AL BACKEND ---
+  // --- GRABACIÓN Y ENVÍO DE VOZ AL BACKEND PYTHON ---
   const toggleRecording = async () => {
     if (isRecording) {
       setIsRecording(false);
       micPulse.stopAnimation();
       micPulse.setValue(1);
+      
       if (!recordingObject) return;
       await recordingObject.stopAndUnloadAsync();
       const uri = recordingObject.getURI();
       setRecordingObject(undefined);
+      
       if (uri) await sendAudioToBackend(uri);
     } else {
       try {
         if (sound) await sound.unloadAsync();
+        
         await Audio.requestPermissionsAsync();
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        await Audio.setAudioModeAsync({ 
+          allowsRecordingIOS: true, 
+          playsInSilentModeIOS: true 
+        });
+        
         const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
         setRecordingObject(recording);
         setIsRecording(true);
+        
         Animated.loop(Animated.sequence([
           Animated.timing(micPulse, { toValue: 1.15, duration: 500, useNativeDriver: true }),
           Animated.timing(micPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -158,33 +178,42 @@ export default function AsistenteScreen() {
 
   const sendAudioToBackend = async (uri: string) => {
     setIsTyping(true);
-    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: '🎤 [Mensaje de Voz]' }]);
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: '🎤 [Nota de Voz Enviada]' }]);
     scrollToBottom();
 
     try {
       const formData = new FormData();
-      formData.append('language', language);
+      formData.append('language', language || 'es');
       formData.append('audio', {
         uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
-        type: 'audio/m4a',
-        name: 'audio.m4a',
+        type: 'audio/wav',
+        name: 'audio.wav',
       } as any);
 
-      const response = await fetch(`${CORE_BACKEND_URL}/api/asistente/voz`, { method: 'POST', body: formData });
-      const data = await response.json();
+      const response = await fetch(`${AI_BACKEND_URL}/api/v1/voice/process/`, { 
+        method: 'POST', 
+        headers: {
+            // ENVIAMOS EL TOKEN DE SEGURIDAD
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData 
+      });
+      
+      const textResponse = await response.text();
 
-      if (response.ok && data.status === 'success') {
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${textResponse}`);
+
+      const data = JSON.parse(textResponse);
+
+      if (data.status === 'success') {
         setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: data.resultado_texto }]);
         if (data.audio_base64) playAiAudio(data.audio_base64);
-        
-        // 💾 GUARDAR HISTORIAL EN BASE DE DATOS
-        // fetch(`${CORE_BACKEND_URL}/api/historial/guardar`, { ... })
-
       } else {
-        setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'No pude procesar el audio correctamente.' }]);
+        setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'No pude escuchar con claridad.' }]);
       }
     } catch (error) {
-      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'Error de conexión con el servidor.' }]);
+      console.error("Error en voz:", error);
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: 'Fallo en la conexión de audio.' }]);
     } finally {
       setIsTyping(false);
       scrollToBottom();
@@ -193,13 +222,20 @@ export default function AsistenteScreen() {
 
   const playAiAudio = async (base64Audio: string) => {
     try {
-      const uri = FileSystem.cacheDirectory + 'ai_response.mp3';
-      await FileSystem.writeAsStringAsync(uri, base64Audio, { encoding: FileSystem.EncodingType.Base64 });
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      const cleanBase64 = base64Audio.replace(/^data:audio\/\w+;base64,/, '');
+      const uri = FS.cacheDirectory + 'ai_response.wav';
+      await FS.writeAsStringAsync(uri, cleanBase64, { 
+        encoding: FS.EncodingType.Base64 
+      });
+      
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: true }
+      );
+      
       setSound(newSound);
-      await newSound.playAsync();
     } catch (error) {
-      console.error('Error reproduciendo el audio', error);
+      console.error('Error procesando el audio TTS', error);
     }
   };
 
@@ -239,7 +275,6 @@ export default function AsistenteScreen() {
               
               <View style={{ flexShrink: 1 }}>
                 <View style={[styles.bubble, msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAI]}>
-                  {/* Soporte para imagen generada por IA (como en el mockup) */}
                   {msg.image && (
                       <Image source={{ uri: msg.image }} style={styles.aiImageResponse} />
                   )}
@@ -257,11 +292,11 @@ export default function AsistenteScreen() {
           {isTyping && (
             <View style={styles.bubbleRow}>
               <View style={styles.aiAvatar}><Ionicons name="sparkles" size={16} color={C.white} /></View>
-              <View style={[styles.bubble, styles.bubbleAI]}><Text style={styles.bubbleTextAI}>Escribiendo...</Text></View>
+              <View style={[styles.bubble, styles.bubbleAI]}><Text style={styles.bubbleTextAI}>Escuchando a los Apus...</Text></View>
             </View>
           )}
 
-          {/* Recomendaciones (Mockup) */}
+          {/* Recomendaciones */}
           {messages.length > 2 && !isTyping && (
             <View style={styles.recommendationsSection}>
                 <Text style={styles.recLabel}>RECOMENDACIONES PARA TI</Text>
@@ -289,7 +324,7 @@ export default function AsistenteScreen() {
               <View style={styles.textInputRow}>
                 <TextInput 
                   style={styles.textInput} 
-                  placeholder="Escribe tu consulta..." 
+                  placeholder="Pregunta algo al guía..." 
                   placeholderTextColor={C.muted}
                   value={inputText}
                   onChangeText={setInputText}
@@ -306,7 +341,7 @@ export default function AsistenteScreen() {
             ) : (
               <View style={styles.voiceBar}>
                 <View style={styles.waveContainer}>
-                  {WAVE_DELAYS.map((d, i) => <WaveBar key={i} delay={d} color={C.greenDark} />)}
+                  {WAVE_DELAYS.map((d, i) => <WaveBar key={i} delay={d} color={isRecording ? '#D64545' : C.greenDark} />)}
                 </View>
                 
                 <Animated.View style={{ transform: [{ scale: micPulse }] }}>

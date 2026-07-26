@@ -190,6 +190,29 @@ const es: Dict = {
   login_guest: 'Continuar como invitado',
   login_no_account: '¿No tienes una cuenta?',
   login_register_link: 'Regístrate aquí',
+  // Generales
+    app_title: 'InkaVoice',
+    explore: 'Explora',
+    history: 'Historial',
+    profile: 'Perfil',
+    settings: 'Configuración',
+    
+    // Audioguía
+    current_chapter: 'CAPÍTULO ACTUAL',
+    listen_guide: 'Escuchar Guía',
+    view_3d: 'Ver Reconstrucción 3D',
+    translate: 'Traducir',
+    
+    // Perfil y Gamificación
+    explorer_level: 'NIVEL DE EXPLORADOR',
+    curaca_real: 'Curaca Real',
+    visited_sites: 'SITIOS VISITADOS',
+    memories: 'MEMORIAS',
+    regions: 'REGIONES',
+    
+    // Errores y Estados
+    loading: 'Cargando tus descubrimientos...',
+    connection_error: 'Error de conexión con el servidor.',
 };
 
 const en: Dict = {
@@ -374,6 +397,29 @@ const en: Dict = {
   login_guest: 'Continue as guest',
   login_no_account: 'Don\'t have an account?',
   login_register_link: 'Sign up here',
+  // General
+    app_title: 'InkaVoice',
+    explore: 'Explore',
+    history: 'History',
+    profile: 'Profile',
+    settings: 'Settings',
+    
+    // Audio Guide
+    current_chapter: 'CURRENT CHAPTER',
+    listen_guide: 'Listen to Guide',
+    view_3d: 'View 3D Reconstruction',
+    translate: 'Translate',
+    
+    // Profile & Gamification
+    explorer_level: 'EXPLORER LEVEL',
+    curaca_real: 'Royal Curaca',
+    visited_sites: 'SITES VISITED',
+    memories: 'MEMORIES',
+    regions: 'REGIONS',
+    
+    // Errors & States
+    loading: 'Loading your discoveries...',
+    connection_error: 'Server connection error.',
 };
 
 const qu: Dict = {
@@ -558,6 +604,29 @@ const qu: Dict = {
   login_guest: 'Watuqaq hina Qatiy',
   login_no_account: '¿Manachu cuentayki kan?',
   login_register_link: 'Kaypi Qillqakuy',
+  // General
+    app_title: 'InkaVoice',
+    explore: 'Maskay',
+    history: 'Kawsay qhipa',
+    profile: 'Runa rikchay',
+    settings: 'Tinkuchina',
+    
+    // Audioguía
+    current_chapter: 'KUNAN TQI',
+    listen_guide: 'Uyariy',
+    view_3d: '3D Rikuy',
+    translate: 'Tikray',
+    
+    // Perfil y Gamificación
+    explorer_level: 'MASKAPAQ KURAQ',
+    curaca_real: 'Inka Kuraka',
+    visited_sites: 'KANCHAKUNA RISQA',
+    memories: 'YUYAYKUNA',
+    regions: 'SUYUKUNA',
+    
+    // Errores y Estados
+    loading: 'Tarisqaykikunata apamuchkan...',
+    connection_error: 'Willay kamayuqwan mana tinkuyta atikunchu.',
 };
 
 export const TRANSLATIONS: Record<LanguageCode, Dict> = { es, en, qu };

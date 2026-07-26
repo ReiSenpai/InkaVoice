@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
-import { useUser } from '../../context/UserContext'; // Asumiendo que tienes el ID del usuario aquí
+import { useUser } from '../../context/UserContext'; 
 
 const STATS = [
   { id: 'sitios', title: 'SITIOS\nVISITADOS', value: 24 },
@@ -27,20 +27,17 @@ export type TimelineItem = {
   type: 'visit' | 'route' | 'scan' | 'ai_chat'; 
 };
 
-// ⚠️ APUNTANDO A TU BACKEND EN RED LOCAL
 const CORE_BACKEND_URL = 'http://192.168.1.36:3000';
 
 export default function HistorialScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { userId } = useUser(); // Obtenemos el ID del usuario actual
+  const { userId } = useUser(); 
 
-  // Estados para manejar los datos del backend
   const [timelineData, setTimelineData] = useState<TimelineItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Colores del mockup
   const C = {
     bg: '#FAF8F5',
     greenDark: '#00332D',
@@ -50,39 +47,30 @@ export default function HistorialScreen() {
     border: '#E5E7EB'
   };
 
-  // 📡 CONEXIÓN AL BACKEND PARA TRAER EL HISTORIAL
   useEffect(() => {
     const fetchHistorial = async () => {
       try {
-        // Reemplaza esta ruta con el endpoint exacto de tu Spring Boot
         const response = await fetch(`${CORE_BACKEND_URL}/api/historial/usuario/${userId || 1}`);
         
         if (response.ok) {
           const data = await response.json();
-          // Mapeamos los datos de la BD a la estructura que necesita nuestra vista
+          // --- MAPEO AJUSTADO A LOS CAMPOS DE LA BD (Spring Boot) ---
           const formattedData: TimelineItem[] = data.map((item: any) => ({
             id: item.id.toString(),
-            date: item.fecha_formateada, // Ej: "13 OCT, 2023 • 04:15 PM"
-            title: item.titulo,
+            date: 'Recientemente', // Se puede mapear a item.fechaCreacion si lo agregas luego
+            title: item.lugarDetectado || 'Descubrimiento AR',
             description: item.descripcion,
-            type: item.tipo, // 'visit', 'route', 'scan', 'ai_chat'
-            image: item.imagen_url,
-            audioLabel: item.audio_titulo ? `Audio: "${item.audio_titulo}"` : undefined,
-            status: item.tipo === 'ai_chat' 
-              ? { label: 'Chat Guardado', actionText: 'VER CHAT', icon: 'chatbubbles', action: `/asistente?chatId=${item.id}` }
-              : item.tipo === 'route'
-              ? { label: `Ruta Finalizada\n${item.km} km • ${item.tiempo}`, actionText: 'VER MAPA', icon: 'analytics', action: '/rutas' }
-              : undefined
+            type: 'scan', 
+            image: item.fotoUrl,
           }));
           
           setTimelineData(formattedData);
         } else {
-          // Si falla, podrías cargar un fallback de prueba o dejarlo vacío
           loadFallbackData();
         }
       } catch (error) {
         console.error("Error obteniendo el historial desde la BD:", error);
-        loadFallbackData(); // Cargamos datos falsos si no hay servidor encendido para no romper la app
+        loadFallbackData(); 
       } finally {
         setIsLoading(false);
       }
@@ -91,7 +79,6 @@ export default function HistorialScreen() {
     fetchHistorial();
   }, []);
 
-  // Función temporal por si el servidor está apagado
   const loadFallbackData = () => {
     setTimelineData([
       {
@@ -115,14 +102,11 @@ export default function HistorialScreen() {
   };
 
   const handleTimelineAction = (actionPath: string) => {
-    // Aquí puedes pasar el ID del chat si quieres que al abrir /asistente cargue un chat viejo
     router.push(actionPath as any);
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10, backgroundColor: C.bg }]}>
-      
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity hitSlop={10}><Ionicons name="search" size={24} color={C.greenDark} /></TouchableOpacity>
         <Text style={styles.headerTitle}>InkaVoice</Text>
@@ -131,11 +115,9 @@ export default function HistorialScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* HERO TITLE */}
         <Text style={styles.eyebrow}>TU LEGADO DIGITAL</Text>
         <Text style={styles.title}>Historial de Exploración</Text>
 
-        {/* STATS */}
         <View style={styles.statsRow}>
           {STATS.map(stat => (
             <View key={stat.id} style={styles.statCard}>
@@ -148,7 +130,6 @@ export default function HistorialScreen() {
           ))}
         </View>
 
-        {/* ACTIVE ROUTE BANNER */}
         <View style={styles.activeRouteCard}>
           <Text style={styles.activeRouteLabel}>RUTA ACTIVA</Text>
           <Text style={styles.activeRouteTitle}>Camino Inca Real</Text>
@@ -158,7 +139,6 @@ export default function HistorialScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* FAVORITOS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Favoritos</Text>
           <TouchableOpacity><Text style={styles.sectionLink}>Ver todos</Text></TouchableOpacity>
@@ -178,7 +158,6 @@ export default function HistorialScreen() {
           ))}
         </ScrollView>
 
-        {/* RECIENTES (TIMELINE DINÁMICO DESDE BD) */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <Text style={styles.sectionTitle}>Recientes</Text>
         </View>
@@ -190,19 +169,16 @@ export default function HistorialScreen() {
             {timelineData.map((item, index) => (
               <View key={item.id} style={styles.timelineRow}>
                 
-                {/* Línea e Indicador */}
                 <View style={styles.timelineMarkerCol}>
                   <View style={styles.timelineDot} />
                   {index < timelineData.length - 1 && <View style={styles.timelineLine} />}
                 </View>
 
-                {/* Contenido de la Tarjeta */}
                 <View style={styles.timelineCard}>
                   <Text style={styles.timelineDate}>{item.date}</Text>
                   <Text style={styles.timelineTitle}>{item.title}</Text>
                   <Text style={styles.timelineDesc}>{item.description}</Text>
 
-                  {/* Si es una visita con Audio */}
                   {item.audioLabel && (
                     <View style={styles.audioLabelRow}>
                       <Ionicons name="headset-outline" size={16} color={C.gold} />
@@ -210,7 +186,6 @@ export default function HistorialScreen() {
                     </View>
                   )}
 
-                  {/* Si tiene un Status/Acción especial (Como los Chats de IA guardados) */}
                   {item.status && (
                     <View style={styles.statusBox}>
                       <View style={styles.statusLeft}>
@@ -225,16 +200,13 @@ export default function HistorialScreen() {
                     </View>
                   )}
 
-                  {/* Si tiene Imagen */}
                   {item.image && (
                      <Image source={{ uri: item.image }} style={styles.timelineImage} />
                   )}
                   
-                  {/* Labels pequeños para Escaneos */}
                   {item.type === 'scan' && (
                     <View style={styles.scanBadgesRow}>
-                      <Text style={styles.scanBadgeText}>⛶ 3 ESCANEOS</Text>
-                      <Text style={[styles.scanBadgeText, { color: '#D64545' }]}>♥ FAVORITO</Text>
+                      <Text style={styles.scanBadgeText}>⛶ IA DETECTADO</Text>
                     </View>
                   )}
 

@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Modal, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAudioGuide } from '../../context/AudioGuideContext';
-import { useLanguage } from '../../context/LanguageContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 type Lang = 'Español' | 'English' | 'Quechua';
 
-// Contenido simulado basado en el diseño
 const CONTENT: Record<Lang, any> = {
   Español: {
     region: 'REGIONAL: HIGHLANDS',
@@ -51,6 +49,7 @@ const CONTENT: Record<Lang, any> = {
 
 const LANGUAGES: Lang[] = ['Español', 'English', 'Quechua'];
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=2000';
+const API_URL = 'http://192.168.1.36:3000/api/memorias/crear';
 
 export default function ResultadoScreen() {
   const router = useRouter();
@@ -62,11 +61,15 @@ export default function ResultadoScreen() {
   const [language, setLanguage] = useState<Lang>('Español');
   const [translating, setTranslating] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
+  
+  // --- NUEVOS ESTADOS PARA GUARDAR LA MEMORIA ---
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [xpGanada, setXpGanada] = useState<string | null>(null);
 
   const content = CONTENT[language];
   const photoUri = params.photoUri;
   const imageSource = photoUri ? { uri: photoUri } : { uri: FALLBACK_IMAGE };
-  // Si la IA mandó texto dinámico, lo podríamos usar aquí, pero para el diseño usaremos el estático
   const aiText = params.aiDescription; 
 
   const handleSelectLang = (lang: Lang) => {
@@ -77,6 +80,39 @@ export default function ResultadoScreen() {
       setLanguage(lang);
       setTranslating(false);
     }, 800);
+  };
+
+  // --- LÓGICA PARA CONECTAR AL BACKEND Y GUARDAR ---
+  const handleSaveMemory = async () => {
+    if (isSaved) return;
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuarioId: "1", 
+          lugarDetectado: content.title.replace('\n', ' '), 
+          fotoUrl: photoUri || FALLBACK_IMAGE, 
+          descripcion: aiText || content.history1,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsSaved(true);
+        setXpGanada(data.xp_ganada || "50");
+      } else {
+        Alert.alert('Error', 'No se pudo guardar la memoria.');
+      }
+    } catch (error) {
+      console.error('Error guardando memoria:', error);
+      Alert.alert('Error', 'Problema de conexión con el servidor.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const C = {
@@ -94,7 +130,6 @@ export default function ResultadoScreen() {
     <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top : 0 }]}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         
-        {/* Encabezado e Imagen Principal */}
         <View style={styles.imageContainer}>
           <Image source={imageSource} style={styles.mainImage} />
           
@@ -114,7 +149,6 @@ export default function ResultadoScreen() {
           </View>
         </View>
 
-        {/* Tarjeta de Contenido superpuesta */}
         <View style={styles.contentCard}>
           <View style={styles.badgeRow}>
             <View style={styles.regionBadge}>
@@ -125,19 +159,32 @@ export default function ResultadoScreen() {
 
           <Text style={styles.title}>{content.title}</Text>
 
-          {/* Botones de Acción Apilados */}
           <View style={styles.actionButtons}>
+            
+            {/* --- NUEVO BOTÓN DE GUARDADO --- */}
             <TouchableOpacity 
-              style={styles.primaryBtn} 
-              onPress={() => router.push({ pathname: '/audioguia', params: { nombre: content.title.replace('\n', ' '), photoUri } })}
+              style={[styles.primaryBtn, isSaved && { backgroundColor: '#10B981' }]} 
+              onPress={handleSaveMemory}
+              disabled={isSaving || isSaved}
             >
-              <Ionicons name="volume-medium" size={20} color={C.white} />
-              <Text style={styles.primaryBtnText}>{content.btnListen}</Text>
+              {isSaving ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <>
+                  <Ionicons name={isSaved ? "checkmark-circle" : "save"} size={20} color={C.white} />
+                  <Text style={styles.primaryBtnText}>
+                    {isSaved ? `¡Guardado! (+${xpGanada} XP)` : 'Guardar en Historial'}
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryBtn}>
-              <Ionicons name="cube-outline" size={20} color={C.greenDark} />
-              <Text style={styles.secondaryBtnText}>{content.btn3D}</Text>
+            <TouchableOpacity 
+              style={styles.secondaryBtn} 
+              onPress={() => router.push({ pathname: '/audioguia', params: { nombre: content.title.replace('\n', ' '), photoUri } })}
+            >
+              <Ionicons name="volume-medium" size={20} color={C.greenDark} />
+              <Text style={styles.secondaryBtnText}>{content.btnListen}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowLangModal(true)}>
@@ -146,7 +193,6 @@ export default function ResultadoScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Área de Texto Traducible */}
           {translating ? (
             <View style={styles.translatingBox}>
               <ActivityIndicator color={C.gold} size="large" />
@@ -174,7 +220,6 @@ export default function ResultadoScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de Idioma */}
       <Modal visible={showLangModal} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowLangModal(false)}>
           <View style={styles.modalSheet}>

@@ -5,10 +5,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useLanguage } from '../../context/LanguageContext';
-import { useAlert } from '../../context/AlertContext';
-import { useTour } from '../../context/TourContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useAlert } from '../context/AlertContext';
+import { useTour } from '../context/TourContext';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 

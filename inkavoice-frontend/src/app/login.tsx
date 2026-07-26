@@ -14,10 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useUser } from '../context/UserContext'; // <-- Importamos el contexto de usuario
 
 export default function LoginScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { setToken, setUserId, setName, setEmail: setUserEmail } = useUser(); // <-- Extraemos los setters
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -51,6 +54,13 @@ export default function LoginScreen() {
 
       if (response.ok && data.appToken) {
         console.log('Login exitoso. Token:', data.appToken);
+        
+        // Guardamos los datos reales en el contexto global sin alterar el diseño
+        setToken(data.appToken);
+        if (data.id) setUserId(String(data.id));
+        if (data.nombre) setName(data.nombre);
+        setUserEmail(email.trim());
+
         router.replace('/(tabs)');
       } else {
         alert(data.message || 'Credenciales incorrectas');
@@ -67,13 +77,13 @@ export default function LoginScreen() {
     <ImageBackground
       source={{ uri: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?q=80&w=800' }}
       style={{ flex: 1 }}
-      imageStyle={{ opacity: 0.15 }} // Fondo sutil como en el diseño
+      imageStyle={{ opacity: 0.15 }}
     >
       <Container style={styles.safe} {...(Platform.OS !== 'web' ? { edges: ['top', 'bottom'] as const } : {})}>
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             
-            {/* Header de la Marca */}
+            {/* Header de la Marca (Diseño Original Figma) */}
             <View style={styles.brandHeader}>
               <View style={styles.logoBox}>
                 <Ionicons name="options" size={32} color={C.white} style={{ transform: [{ rotate: '90deg' }] }} />

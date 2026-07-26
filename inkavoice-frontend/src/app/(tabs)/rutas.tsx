@@ -8,7 +8,7 @@ import { getInitials } from '../../../utils/initials';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTour } from '../../context/TourContext';
 import { MINI_TOUR_BAR_HEIGHT, MINI_TOUR_BAR_GAP } from '../../components/MiniTourBar';
-import { SITES } from '../(tabs)/mapa'; 
+import { SITES } from '../mapa'; 
 import { useTheme } from '../../context/ThemeContext';
 
 const ROUTES = [
